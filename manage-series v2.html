@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Content - Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --primary-bg: #0A0F2A;
+            --card-bg: #1C2141;
+            --accent-color: #DFFF00;
+            --text-primary: #FFFFFF;
+            --text-secondary: #a9a9b3;
+            --logout-bg: #e74c3c;
+            --input-bg: #0A0F2A;
+            --success-color: #27ae60;
+            --danger-color: #f44336;
+            --info-color: #2196F3;
+        }
+        body { background-color: var(--primary-bg); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; }
+        #adminPanel { display: flex; }
+        #mainMenu { width: 250px; flex-shrink: 0; background-color: #111533; min-height: 100vh; transition: transform 0.3s ease; z-index: 1000; }
+        .main-content { flex-grow: 1; padding: 1.5rem; }
+        .admin-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 10px; }
+        .header-title-section { flex-grow: 1; }
+        .admin-header h1 { color: var(--accent-color); font-size: 2.5rem; font-weight: 700; line-height: 1.1; margin: 0; }
+        .user-info { color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; }
+        #menuToggleBtn { display: block; position: static; background: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); border-radius: 8px; width: 50px; height: 50px; font-size: 1.5rem; cursor: pointer; padding: 0; margin-right: 20px; }
+        .logout-btn { background-color: var(--logout-bg); color: white; border: none; border-radius: 8px; padding: 12px 20px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        #searchView, #detailsView { background-color: var(--card-bg); padding: 2rem; border-radius: 15px; margin-top: 2rem; }
+        #searchView h2, #detailsView h2 { font-size: 1.2rem; color: var(--text-primary); margin: 0 0 10px 0; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input[type="text"], .form-group input[type="url"], .form-group .checkbox-group { width: 100%; background-color: var(--input-bg); border: 1px solid #33395b; border-radius: 8px; padding: 15px; color: var(--text-primary); font-size: 1rem; margin-top: 5px; box-sizing: border-box; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        #searchTmdbBtn { width: 100%; background: linear-gradient(90deg, #FF416C, #FFDE00); color: white; border: none; border-radius: 8px; padding: 15px; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 1.5rem; }
+        .message { margin-top: 20px; padding: 12px; border-radius: 5px; text-align: center; display: none; }
+        .message.success { background-color: var(--success-color); }
+        .message.error { background-color: var(--danger-color); }
+        .message.info { background-color: var(--info-color); }
+
+        /* Episode Table Styling */
+        .episode-table-wrapper { overflow-x: auto; margin-top: 20px; }
+        .episode-table { width: 100%; border-collapse: collapse; }
+        .episode-table th, .episode-table td { padding: 12px; border: 1px solid #33395b; text-align: left; vertical-align: top; }
+        .episode-table th { background-color: var(--primary-bg); font-weight: bold; }
+        .episode-table td .thumbnail-container { display: flex; gap: 8px; align-items: center; min-width: 200px; }
+        .episode-table td .thumbnail-container img { width: 150px; height: 84px; object-fit: cover; border-radius: 4px; display: block; background-color: #000; flex-shrink: 0; }
+        .episode-table .ep-thumbnail-url { flex-grow: 1; }
+        .episode-table input[type="text"], .episode-table input[type="url"] { width: 100%; background-color: var(--input-bg); border: 1px solid #555c8f; border-radius: 5px; padding: 8px; color: var(--text-primary); font-size: 14px; box-sizing: border-box; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(26px); }
+        
+        /* Season Header & Add Controls Styling */
+        .episode-table tr[data-season-header] td, .episode-table tr[data-add-controls] td {
+            background-color: var(--primary-bg);
+            text-align: center;
+        }
+        .episode-table tr[data-season-header] td { color: var(--accent-color); font-size: 1.1em; font-weight: bold; }
+        .episode-table tr[data-add-controls] div { display: flex; gap: 10px; align-items: center; justify-content: flex-end; }
+        .episode-table tr[data-add-controls] input { width: 70px; padding: 8px; border-radius: 5px; }
+
+        /* Responsive Menu */
+        @media (max-width: 768px) {
+             #adminPanel { flex-direction: column; }
+            .admin-header { align-items: center; }
+            .header-title-section { margin-top: 0; }
+            .admin-header h1 { font-size: 2rem; }
+            #mainMenu { position: fixed; transform: translateX(-100%); }
+            #mainMenu.open { transform: translateX(0); }
+        }
+         @media (min-width: 769px) { #menuToggleBtn { display: none; } }
+    </style>
+</head>
+<body>
+    <div id="adminPanel">
+        <nav id="mainMenu">
+            <div class="menu-header">Admin Menu</div>
+            <a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <hr style="border-color: #333; margin: 10px 0;">
+            <a href="manage-movies.html"><i class="fas fa-film"></i> Manage Movies</a>
+            <a href="manage-series.html" class="active"><i class="fas fa-tv"></i> Manage Series</a>
+            <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
+            <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
+            <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
+        </nav>
+
+        <div class="main-content">
+            <div class="admin-header">
+                <div style="display: flex; align-items: center;">
+                    <button id="menuToggleBtn"><i class="fas fa-bars"></i></button>
+                    <div class="header-title-section"><h1>Search & Manage<br>Series</h1></div>
+                </div>
+                <button class="logout-btn" id="logoutBtn">Logout <i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            
+            <p class="user-info"></p>
+
+            <div id="manageSeriesPage" class="page-container" style="display: block;">
+                <div id="searchView">
+                    <h2>Search for a Series on TMDB</h2>
+                    <div class="form-group"><input type="text" id="seriesSearchQuery" placeholder="Enter series name..."></div>
+                    <button id="searchTmdbBtn">Search Content</button>
+                    <div id="searchResultsContainer" style="margin-top:20px;"></div>
+                </div>
+                
+                <div id="detailsView" style="display: none;">
+                    <div id="detailsHeader" style="display: flex; gap: 20px; margin-bottom: 20px; align-items: flex-start;">
+                        <img id="seriesPoster" src="" alt="Series Poster" style="width: 150px; border-radius: 8px;">
+                        <div><h2 id="seriesTitle" style="text-align: left; margin-bottom: 10px;"></h2><p id="seriesOverview"></p></div>
+                    </div>
+                    <div class="form-group"><label for="vjName">VJ Name (Required)</label><input type="text" id="vjName" required></div>
+                    <div class="form-group"><label>Categories</label><div class="checkbox-group" id="seriesCategories"></div></div>
+                    <h2 style="margin-top: 30px;">Episodes</h2>
+                    <div class="episode-table-wrapper">
+                        <table class="episode-table">
+                            <thead><tr><th>#</th><th>Name</th><th>Thumbnail</th><th>Description</th><th>Video link</th><th>Publish</th><th>Premium</th></tr></thead>
+                            <tbody id="episodesTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 30px; border-top: 1px solid #555; padding-top: 20px;">
+                      <h3>For Sort Page Only</h3>
+                      <div class="form-group"><label>VJs for Sort Page</label><div class="checkbox-group" id="sortVjsCheckboxes"></div></div>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-top: 20px;">
+                        <button id="submitSeriesBtn" style="flex: 1; padding: 15px; background: linear-gradient(90deg, #1abc9c, #27ae60); border:none; border-radius: 8px; font-size: 1rem; color: white; cursor: pointer;">Create Series</button>
+                        <button id="cancelBtn" style="flex: 1; background: #555; border:none; border-radius: 8px; font-size: 1rem; color: white; cursor: pointer;">Cancel</button>
+                    </div>
+                </div>
+                <div id="formMessage" class="message"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const firebaseConfig = { apiKey: "AIzaSyCgbaRR6ezvswehl1Q21ICHgBtXZ9bcLwA", authDomain: "my-movies-admin.firebaseapp.com", projectId: "my-movies-admin", storageBucket: "my-movies-admin.firebasestorage.app", messagingSenderId: "492775126123", appId: "1:492775126123:web:7ad51095ff15f61ed12d2e" };
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(app);
+        const auth = firebase.auth(app);
+
+        const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5";
+        let currentSeriesData = null;
+        let editModeDocId = null;
+        const VJ_LIST = ["Vj Junior", "Vj TONNY", "Vj Emmy", "Heavy q","Vj Mk","Vj SHIELD","Vj Light","Vj BONNY", "VJ NEIL", "Vj Jovan", "Vj Tom", "Vj Shao Khan", "Vj Jingo", "Vj Ice P", "Vj Kevo", "Vj Kevin", "Vj Kriss Sweet", "Vj Hd", "Vj Dan De", "Vj Sammy", "Vj Ivo", "Vj Isma K", "Vj Little T", "Vj Mox", "Vj Muba", "Vj Eddy", "Vj Kam", "Vj Lance", "Vj KS", "Vj Ulio", "Vj Aaron", "Vj Cabs", "Vj Banks", "Vj Jimmy", "Vj Baros", "Vj SOUL", "Vj SON", "Vj Kimuli", "Vj Fredy", "Vj Jumpers", "Vj Ashim", "Vj Pauleta", "Vj Martin K", "Vj Henrico", "Vj Uncle T", "Vj RONAGE"];
+        const SERIES_CATEGORIES = [{ value: 'latest_uploads', label: 'Latest Uploads' }, { value: 'most_liked', label: 'Latest On Jmovies' }, { value: 'upcoming_shows', label: 'Upcoming Shows' }, { value: 'western_series', label: 'Western Series' }, { value: 'Latest-TV-Series', label: 'Latest Tv Shows' }, { value: 'k_dramas', label: 'K Dramas' }, { value: 'send_notification', label: 'Send Notification' }];
+
+        const searchView = document.getElementById('searchView');
+        const detailsView = document.getElementById('detailsView');
+        const searchTmdbBtn = document.getElementById('searchTmdbBtn');
+        const searchResultsContainer = document.getElementById('searchResultsContainer');
+        const episodesTableBody = document.getElementById('episodesTableBody');
+        const submitSeriesBtn = document.getElementById('submitSeriesBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const formMessage = document.getElementById('formMessage');
+        const menuToggleBtn = document.getElementById('menuToggleBtn');
+        const mainMenu = document.getElementById('mainMenu');
+        const userInfo = document.querySelector('.user-info');
+
+        const setLoading = (btn, isLoading) => { if(btn) { btn.disabled = isLoading; }};
+        const displayMessage = (msg, type) => { formMessage.textContent = msg; formMessage.className = `message ${type}`; formMessage.style.display = 'block'; setTimeout(() => { formMessage.style.display = 'none'; }, 8000); };
+        const generateSlug = (text) => text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
+        
+        async function sendNotification(title, body, imageUrl = '', url = '', msgElement) {
+            const payload = { title, body, imageUrl, url };
+            try {
+                const functionUrl = 'https://jmovies.ajunaisaac-ug.workers.dev';
+                const response = await fetch(functionUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                if (response.ok) { msgElement.innerHTML += '<br>Notification sent successfully!'; } 
+                else { msgElement.innerHTML += `<br>Failed to send notification: ${result.error || 'Unknown error'}`; }
+            } catch (error) { msgElement.innerHTML += `<br>Notification network error: ${error.message}`; }
+        }
+
+        async function checkForDuplicates(payload, excludeDocId = null) {
+            if (!payload.unique_reference_id) return { found: false };
+            const q = db.collection('movies').where('unique_reference_id', '==', payload.unique_reference_id);
+            const snapshot = await q.get();
+            for (const doc of snapshot.docs) { if (doc.id !== excludeDocId) return { found: true, field: 'This exact VJ version already exists.' }; }
+            return { found: false };
+        }
+
+        function populateCheckboxes(containerId, list, selectedValues = []) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            list.forEach(item => {
+                const labelEl = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox'; checkbox.name = containerId;
+                if (typeof item === 'object' && item !== null) {
+                    checkbox.value = item.value;
+                    checkbox.checked = selectedValues.includes(item.value);
+                    labelEl.appendChild(checkbox);
+                    labelEl.appendChild(document.createTextNode(` ${item.label}`));
+                } else {
+                    checkbox.value = item;
+                    checkbox.checked = selectedValues.includes(item);
+                    labelEl.appendChild(checkbox);
+                    labelEl.appendChild(document.createTextNode(` ${item}`));
+                }
+                container.appendChild(labelEl);
+            });
+        }
+        
+        if (menuToggleBtn && mainMenu) menuToggleBtn.addEventListener('click', () => mainMenu.classList.toggle('open'));
+        
+        auth.onAuthStateChanged(user => { 
+            if (!user) { window.location.href = 'index.html'; } 
+            else {
+                if(userInfo) userInfo.textContent = `Logged in as: ${user.email}`;
+                initializePage();
+            }
+        });
+        
+        document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+
+        function initializePage() {
+            populateCheckboxes('sortVjsCheckboxes', VJ_LIST);
+            populateCheckboxes('seriesCategories', SERIES_CATEGORIES);
+            const urlParams = new URLSearchParams(window.location.search);
+            const docId = urlParams.get('id');
+            if (docId) { editModeDocId = docId; loadSeriesForEditing(docId); } 
+            else { searchView.style.display = 'block'; detailsView.style.display = 'none'; }
+        }
+
+        searchTmdbBtn.addEventListener('click', async () => {
+            const query = document.getElementById('seriesSearchQuery').value; if (!query) return;
+            setLoading(searchTmdbBtn, true);
+            searchResultsContainer.innerHTML = '<p class="message info" style="display:block">Searching...</p>';
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                displaySearchResults(data.results);
+            } catch (error) { searchResultsContainer.innerHTML = `<p class="message error" style="display:block">Error: ${error.message}</p>`; } 
+            finally { setLoading(searchTmdbBtn, false); }
+        });
+
+        function displaySearchResults(results) {
+            searchResultsContainer.innerHTML = '';
+            if (!results || results.length === 0) { searchResultsContainer.innerHTML = '<p class="message info" style="display:block">No results found.</p>'; return; }
+            results.forEach(series => {
+                const posterPath = series.poster_path ? `https://image.tmdb.org/t/p/w200${series.poster_path}` : 'https://placehold.co/100x150?text=N/A';
+                searchResultsContainer.innerHTML += `<div class="content-card" style="display:flex; gap:15px; margin-bottom:10px; padding:10px; background-color:var(--primary-bg); border-radius:8px;">
+                    <img src="${posterPath}" alt="${series.name}" style="width:100px; border-radius:5px;">
+                    <div style="flex:1;"><h3>${series.name}</h3><p>${series.overview.substring(0,150)}...</p><button class="select-btn" data-id="${series.id}" style="padding:8px 12px; border:none; border-radius:5px; background:var(--accent-color); color:var(--primary-bg); cursor:pointer; margin-top:10px;">Select</button></div></div>`;
+            });
+        }
+
+        searchResultsContainer.addEventListener('click', async e => {
+            if (e.target.classList.contains('select-btn')) {
+                setLoading(e.target, true);
+                await fetchAndDisplaySeriesDetails(e.target.dataset.id);
+                setLoading(e.target, false);
+            }
+        });
+        
+        function addCustomEpisodeRow(seasonNumber, insertionPoint) {
+            const row = document.createElement('tr');
+            row.dataset.seasonNumber = seasonNumber;
+            const placeholderImg = 'https://placehold.co/200x113/0A0F2A/DFFF00?text=Custom';
+            row.innerHTML = `
+                <td>...</td>
+                <td><input type="text" class="ep-name" placeholder="VJ Episode Name"></td>
+                <td><div class="thumbnail-container"><img src="${placeholderImg}" alt="Thumbnail Preview"><input type="url" class="ep-thumbnail-url" placeholder="Paste image URL" oninput="this.previousElementSibling.src=this.value || '${placeholderImg}'"></div></td>
+                <td><input type="text" class="ep-desc" placeholder="Optional description"></td>
+                <td><input type="url" class="ep-link" placeholder="Paste video URL" required></td>
+                <td><label class="toggle-switch"><input type="checkbox" class="ep-publish" checked><span class="slider"></span></label></td>
+                <td><label class="toggle-switch"><input type="checkbox" class="ep-premium" checked><span class="slider"></span></label></td>`;
+            insertionPoint.before(row);
+        }
+
+        episodesTableBody.addEventListener('click', (e) => {
+            if (e.target.matches('.add-episodes-to-season-btn')) {
+                const button = e.target;
+                const seasonNumber = button.dataset.seasonNumber;
+                const controlsRow = button.closest('tr[data-add-controls]');
+                const countInput = controlsRow.querySelector('.bulk-add-count');
+                const count = parseInt(countInput.value, 10);
+
+                if (isNaN(count) || count < 1) { alert('Please enter a valid number of episodes to add.'); return; }
+                for (let i = 0; i < count; i++) { addCustomEpisodeRow(seasonNumber, controlsRow); }
+                countInput.value = '';
+            }
+        });
+
+        async function fetchAndDisplaySeriesDetails(seriesId, existingEpisodesData = null) {
+            displayMessage("Fetching details...", "info");
+            try {
+                // ✅ BUG FIX: DEFINE placeholderImg HERE
+                const placeholderImg = 'https://placehold.co/200x113/0A0F2A/DFFF00?text=No+Image';
+
+                const response = await fetch(`https://api.themoviedb.org/3/tv/${seriesId}?api_key=${TMDB_API_KEY}`);
+                const data = await response.json();
+                currentSeriesData = data;
+                document.getElementById('seriesPoster').src = data.poster_path ? `https://image.tmdb.org/t/p/w200${data.poster_path}` : '';
+                document.getElementById('seriesTitle').textContent = data.name;
+                document.getElementById('seriesOverview').textContent = data.overview;
+                episodesTableBody.innerHTML = '';
+                
+                let globalEpisodeCounter = 1;
+                for (const season of data.seasons) {
+                    if (season.season_number === 0) continue;
+
+                    const headerRow = document.createElement('tr');
+                    headerRow.dataset.seasonHeader = true;
+                    headerRow.innerHTML = `<td colspan="7">Season ${season.season_number} - ${season.name}</td>`;
+                    episodesTableBody.appendChild(headerRow);
+
+                    const seasonDetailsResponse = await fetch(`https://api.themoviedb.org/3/tv/${seriesId}/season/${season.season_number}?api_key=${TMDB_API_KEY}`);
+                    const seasonDetails = await seasonDetailsResponse.json();
+                    
+                    seasonDetails.episodes.forEach(episode => {
+                        const existingEp = existingEpisodesData ? existingEpisodesData.find(ep => ep.tmdb_id === episode.id) : null;
+                        const row = document.createElement('tr');
+                        row.dataset.seasonNumber = episode.season_number;
+                        row.dataset.episodeNumber = episode.episode_number;
+                        row.dataset.tmdbId = episode.id;
+
+                        const stillPath = existingEp?.thumbnailUrl || (episode.still_path ? `https://image.tmdb.org/t/p/w300${episode.still_path}` : placeholderImg);
+                        const publishChecked = existingEp ? (existingEp.published ? 'checked' : '') : 'checked';
+                        
+                        row.innerHTML = `
+                            <td>${globalEpisodeCounter++}</td>
+                            <td><input type="text" class="ep-name" value="${episode.name}"></td>
+                            <td><div class="thumbnail-container"><img src="${stillPath}" alt="Thumbnail Preview"><input type="url" class="ep-thumbnail-url" value="${stillPath}" oninput="this.previousElementSibling.src=this.value || '${placeholderImg}'"></div></td>
+                            <td><input type="text" class="ep-desc" value="${existingEp ? existingEp.overview : episode.overview}"></td>
+                            <td><input type="url" class="ep-link" value="${existingEp ? existingEp.videoUrl : ''}"></td>
+                            <td><label class="toggle-switch"><input type="checkbox" class="ep-publish" ${publishChecked}><span class="slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" class="ep-premium" checked><span class="slider"></span></label></td>`;
+                        episodesTableBody.appendChild(row);
+                    });
+
+                    // ✅ BUG FIX: LOAD CUSTOM EPISODES FOR *THIS* SEASON
+                    if (existingEpisodesData) {
+                        const customEpisodes = existingEpisodesData.filter(ep => ep.season_number === season.season_number && !ep.tmdb_id).sort((a,b) => a.episode_number - b.episode_number);
+                        customEpisodes.forEach(ep => {
+                            const customRow = document.createElement('tr');
+                            customRow.dataset.seasonNumber = ep.season_number;
+                            customRow.innerHTML = `
+                                <td>${globalEpisodeCounter++}</td>
+                                <td><input type="text" class="ep-name" value="${ep.title || ''}"></td>
+                                <td><div class="thumbnail-container"><img src="${ep.thumbnailUrl || placeholderImg}" alt="Thumbnail Preview"><input type="url" class="ep-thumbnail-url" value="${ep.thumbnailUrl || ''}" oninput="this.previousElementSibling.src=this.value || '${placeholderImg}'"></div></td>
+                                <td><input type="text" class="ep-desc" value="${ep.overview || ''}"></td>
+                                <td><input type="url" class="ep-link" value="${ep.videoUrl || ''}"></td>
+                                <td><label class="toggle-switch"><input type="checkbox" class="ep-publish" ${ep.published ? 'checked' : ''}><span class="slider"></span></label></td>
+                                <td><label class="toggle-switch"><input type="checkbox" class="ep-premium" ${ep.isPremium ? 'checked' : ''}><span class="slider"></span></label></td>`;
+                            episodesTableBody.appendChild(customRow);
+                        });
+                    }
+
+                    const addControlsRow = document.createElement('tr');
+                    addControlsRow.dataset.addControls = true;
+                    addControlsRow.innerHTML = `<td colspan="7"><div><input type="number" class="bulk-add-count" placeholder="Qty" min="1"><button type="button" class="add-episodes-to-season-btn" data-season-number="${season.season_number}" style="width: auto; padding: 8px 15px; background-color:var(--success-color); border:none; border-radius:5px; cursor:pointer;">+ Add Custom Episode</button></div></td>`;
+                    episodesTableBody.appendChild(addControlsRow);
+                }
+                
+                searchView.style.display = 'none';
+                detailsView.style.display = 'block';
+                window.scrollTo(0, 0);
+            } catch (error) { displayMessage(`Error fetching details: ${error.message}`, 'error'); }
+        }
+        
+        async function loadSeriesForEditing(docId) {
+            displayMessage("Loading existing series data...", "info");
+            searchView.style.display = 'none'; detailsView.style.display = 'block';
+            submitSeriesBtn.textContent = 'Update Series';
+            try {
+                const doc = await db.collection('movies').doc(docId).get();
+                if (!doc.exists) throw new Error("Series not found.");
+                const seriesData = doc.data();
+                const episodesSnapshot = await db.collection('movies').doc(docId).collection('episodes').orderBy('season_number').orderBy('episode_number').get();
+                const episodesData = episodesSnapshot.docs.map(doc => doc.data());
+                document.getElementById('vjName').value = seriesData.vjName || '';
+                populateCheckboxes('seriesCategories', SERIES_CATEGORIES, seriesData.type);
+                populateCheckboxes('sortVjsCheckboxes', VJ_LIST, seriesData.sort_vjs);
+                await fetchAndDisplaySeriesDetails(seriesData.tmdbId, episodesData);
+            } catch(error) { displayMessage(`Error loading data: ${error.message}`, 'error'); }
+        }
+
+        submitSeriesBtn.addEventListener('click', async () => {
+            setLoading(submitSeriesBtn, true);
+            const vjName = document.getElementById('vjName').value.trim();
+            if (!vjName) { displayMessage('VJ Name is required.', 'error'); setLoading(submitSeriesBtn, false); return; }
+            let finalDocId = editModeDocId;
+            try {
+                const seriesTitle = currentSeriesData.name;
+                const uniqueRefId = `${currentSeriesData.id}_${generateSlug(vjName)}_${generateSlug(seriesTitle)}`;
+                const tmdbGenres = currentSeriesData.genres.map(g => g.name);
+                const mainDocPayload = {
+                    title: seriesTitle, vjName: vjName, tmdbId: currentSeriesData.id, unique_reference_id: uniqueRefId,
+                    posterUrl: currentSeriesData.poster_path ? `https://image.tmdb.org/t/p/w500${currentSeriesData.poster_path}` : '',
+                    backdropUrl: currentSeriesData.backdrop_path ? `https://image.tmdb.org/t/p/original${currentSeriesData.backdrop_path}` : '',
+                    overview: currentSeriesData.overview, genres: tmdbGenres, sort_genres: tmdbGenres, contentType: 'tv',
+                    type: Array.from(document.querySelectorAll('#seriesCategories input:checked')).map(cb => cb.value),
+                    sort_vjs: Array.from(document.querySelectorAll('#sortVjsCheckboxes input:checked')).map(cb => cb.value),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                };
+                
+                const duplicateCheck = await checkForDuplicates(mainDocPayload, editModeDocId);
+                if (duplicateCheck.found) { throw new Error(duplicateCheck.field); }
+
+                const episodesPayload = [];
+                const seasonsMap = new Map();
+                episodesTableBody.querySelectorAll('tr:not([data-season-header]):not([data-add-controls])').forEach(row => {
+                    const seasonNum = row.dataset.seasonNumber;
+                    if (!seasonsMap.has(seasonNum)) { seasonsMap.set(seasonNum, []); }
+                    seasonsMap.get(seasonNum).push(row);
+                });
+
+                for (const [seasonNum, rows] of seasonsMap.entries()) {
+                    rows.forEach((row, index) => {
+                        const videoUrl = row.querySelector('.ep-link').value.trim();
+                        if (videoUrl) {
+                            episodesPayload.push({
+                                season_number: parseInt(seasonNum),
+                                episode_number: index + 1,
+                                tmdb_id: parseInt(row.dataset.tmdbId) || null,
+                                title: row.querySelector('.ep-name').value,
+                                overview: row.querySelector('.ep-desc').value,
+                                videoUrl: videoUrl,
+                                thumbnailUrl: row.querySelector('.ep-thumbnail-url').value,
+                                published: row.querySelector('.ep-publish').checked,
+                                isPremium: row.querySelector('.ep-premium').checked,
+                            });
+                        }
+                    });
+                }
+                
+                if (editModeDocId) {
+                    const docRef = db.collection('movies').doc(editModeDocId);
+                    const episodesRef = docRef.collection('episodes');
+                    const oldEpisodesSnapshot = await episodesRef.get();
+                    const batch = db.batch();
+                    batch.update(docRef, mainDocPayload);
+                    oldEpisodesSnapshot.forEach(doc => { batch.delete(doc.ref); });
+                    episodesPayload.forEach(epData => {
+                        const newEpRef = episodesRef.doc();
+                        batch.set(newEpRef, { ...epData, addedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    });
+                    await batch.commit();
+                } else {
+                    if (episodesPayload.length === 0) { throw new Error("Cannot create a new series. Please add at least one video link."); }
+                    mainDocPayload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    const docRef = await db.collection('movies').add(mainDocPayload);
+                    finalDocId = docRef.id;
+                    const batch = db.batch();
+                    episodesPayload.forEach(ep => { batch.set(docRef.collection('episodes').doc(), { ...ep, addedAt: firebase.firestore.FieldValue.serverTimestamp() }); });
+                    await batch.commit();
+                }
+                
+                displayMessage(`Series successfully ${editModeDocId ? 'updated' : 'created'}!`, 'success');
+
+                if (mainDocPayload.type.includes('send_notification')) {
+                    const notifTitle = `${mainDocPayload.title} by ${mainDocPayload.vjName} is now available!`;
+                    const notifBody = mainDocPayload.overview;
+                    const notifImage = mainDocPayload.backdropUrl;
+                    const notifUrl = `streamzonemovies://details?id=${finalDocId}`;
+                    await sendNotification(notifTitle, notifBody, notifImage, notifUrl, formMessage);
+                }
+
+                setTimeout(() => { window.location.href = 'index.html'; }, 3500);
+
+            } catch (error) { displayMessage(`Operation failed: ${error.message}`, 'error'); } 
+            finally { setLoading(submitSeriesBtn, false); }
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            if(confirm('Are you sure? Any unsaved changes will be lost.')){
+                window.location.href = 'index.html';
+            }
+        });
+    });
+</script>
+</body>
+</html>

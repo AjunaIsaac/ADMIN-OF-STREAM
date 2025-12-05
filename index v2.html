@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* --- Redesign Styles --- */
+        :root {
+            --primary-bg: #0A0F2A;
+            --card-bg: #1C2141;
+            --accent-color: #DFFF00;
+            --text-primary: #FFFFFF;
+            --text-secondary: #a9a9b3;
+            --logout-bg: #e74c3c;
+            --input-bg: #0A0F2A;
+            --danger-color: #e74c3c;
+        }
+        body { background-color: var(--primary-bg); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        #loginScreen { display: flex; width: 100%; height: 100vh; align-items: center; justify-content: center; }
+        .login-container { background-color: var(--card-bg); padding: 2.5rem; border-radius: 15px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .login-container h1 { color: var(--accent-color); text-align: center; margin-bottom: 2rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-secondary); }
+        .form-group input { width: 100%; background-color: var(--input-bg); border: 1px solid #33395b; border-radius: 8px; padding: 15px; color: var(--text-primary); font-size: 1rem; box-sizing: border-box; }
+        #loginForm button { width: 100%; background: linear-gradient(90deg, #FF416C, #FFDE00); color: white; border: none; border-radius: 8px; padding: 15px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s ease; }
+        #loginForm button:hover { transform: scale(1.02); }
+        #adminPanel { display: flex; width: 100%; height: 100vh; overflow: hidden; }
+        #mainMenu { width: 250px; flex-shrink: 0; background-color: #111533; min-height: 100vh; transition: transform 0.3s ease; z-index: 1000; }
+        #mainMenu a { display: block; padding: 15px 20px; color: var(--text-secondary); text-decoration: none; transition: background-color 0.3s, color 0.3s; }
+        #mainMenu a:hover, #mainMenu a.active { background-color: var(--card-bg); color: var(--accent-color); }
+        #mainMenu .menu-header { padding: 20px; font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
+        #mainMenu a i { margin-right: 10px; }
+        .main-content { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+        .admin-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 10px; }
+        .header-title-section { flex-grow: 1; }
+        .admin-header h1 { color: var(--accent-color); font-size: 2.5rem; font-weight: 700; line-height: 1.1; margin: 0; }
+        .user-info { color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; }
+        #menuToggleBtn { display: block; position: static; background: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); border-radius: 8px; width: 50px; height: 50px; font-size: 1.5rem; cursor: pointer; padding: 0; margin-right: 20px; }
+        .logout-btn { background-color: var(--logout-bg); color: white; border: none; border-radius: 8px; padding: 12px 20px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .page-container { margin-top: 2rem; display: none; }
+        .page-container.active { display: block; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .dashboard-card { background-color: var(--card-bg); border-radius: 15px; padding: 1.5rem; text-decoration: none; color: var(--text-primary); display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .dashboard-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .dashboard-card i { font-size: 2.5rem; color: var(--accent-color); margin-bottom: 1rem; }
+        .dashboard-card h3 { margin: 0 0 0.5rem 0; }
+        .dashboard-card p { color: var(--text-secondary); font-size: 0.9rem; flex-grow: 1; }
+        .go-link { color: var(--accent-color); font-weight: bold; margin-top: 1rem; }
+        .message { padding: 15px; border-radius: 8px; margin-top: 1rem; display: none; }
+        .message.error { background-color: var(--danger-color); color: white; }
+        @media (max-width: 768px) {
+            body { align-items: flex-start; } #adminPanel { flex-direction: column; height: auto; } .main-content { overflow-y: visible; } .admin-header { align-items: center; } .admin-header h1 { font-size: 2rem; }
+            #mainMenu { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); }
+            #mainMenu.open { transform: translateX(0); }
+        }
+        @media (min-width: 769px) { #menuToggleBtn { display: none; } }
+    </style>
+</head>
+<body>
+    <div id="loginScreen" style="display: none;">
+        <div class="login-container">
+            <h1>Admin Login</h1>
+            <form id="loginForm">
+                <div class="form-group"><label for="loginEmail">Email</label><input type="email" id="loginEmail" required></div>
+                <div class="form-group"><label for="loginPassword">Password</label><input type="password" id="loginPassword" required></div>
+                <button type="submit">Login</button>
+            </form>
+            <div id="loginMessage" class="message"></div>
+        </div>
+    </div>
+    <div id="adminPanel" style="display: none;">
+        <nav id="mainMenu">
+            <div class="menu-header">Admin Menu</div>
+            <a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <hr style="border-color: #333; margin: 10px 0;">
+            <a href="manage-movies.html"><i class="fas fa-film"></i> Manage Movies</a>
+            <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
+            <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
+            <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
+            <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
+            <!-- ✅ NEW LINK ADDED -->
+            <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
+        </nav>
+        <div class="main-content">
+            <div class="admin-header">
+                <div style="display: flex; align-items: center;">
+                    <button id="menuToggleBtn"><i class="fas fa-bars"></i></button>
+                    <div class="header-title-section">
+                        <h1 id="pageTitle">Dashboard</h1>
+                    </div>
+                </div>
+                <button class="logout-btn" id="logoutBtn">Logout <i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            <!-- ✅ GIVEN AN ID TO BE DYNAMIC -->
+            <p class="user-info" id="adminEmailDisplay">Logged in as...</p>
+              
+            <div id="dashboardPage" class="page-container active">
+                <h2>What would you like to do?</h2>
+                <div class="dashboard-grid">
+                    <a href="manage-movies.html" class="dashboard-card"><i class="fas fa-film"></i><h3>Manage Movies</h3><p>Add a new movie from TMDB or search for an existing movie to edit its details, video link, or categories.</p><span class="go-link">Go to Movies</span></a>
+                    <a href="manage-series.html" class="dashboard-card"><i class="fas fa-tv"></i><h3>Manage Series</h3><p>Add a complete new series. Search TMDB, fetch all seasons and episodes, and easily add your video links in a table.</p><span class="go-link">Go to Series</span></a>
+                    <a href="manage-banners.html" class="dashboard-card"><i class="fas fa-images"></i><h3>Manage Banners</h3><p>Create, edit, or delete the promotional banners that appear at the top of your application's home screen.</p><span class="go-link">Go to Banners</span></a>
+                    <a href="manage-notifications.html" class="dashboard-card"><i class="fas fa-paper-plane"></i><h3>Send Notifications</h3><p>Instantly send push notifications to all your users to announce new content or important updates.</p><span class="go-link">Go to Notifications</span></a>
+                    <a href="manage-users.html" class="dashboard-card"><i class="fas fa-users-cog"></i><h3>Manage Users</h3><p>Search for specific users by their email to view, update, or manage their subscription status and details.</p><span class="go-link">Go to Users</span></a>
+                    <!-- This card's functionality is preserved -->
+                    <a href="#" class="dashboard-card" id="viewAllContentCard"><i class="fas fa-search"></i><h3>Search & View All</h3><p>A simple, powerful search to quickly find any Movie or Series in your database and edit or delete it.</p><span class="go-link">Search Now</span></a>
+                </div>
+            </div>
+            
+            <div id="manageContentPage" class="page-container">
+                <div class="dashboard-card">
+                    <h2>Search & Manage Content</h2>
+                    <div class="form-group"><label for="manageContentIdentifier">Search by Title, TMDB ID, or Unique ID</label><input type="text" id="manageContentIdentifier" required></div>
+                    <button type="button" id="searchManageBtn" style="width: auto; padding: 10px 20px;">Search</button>
+                    <div id="manageSearchResults" style="margin-top: 20px;"></div>
+                    <div id="manageMessage" class="message"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script>
+    // ✅✅✅ THIS IS THE ONLY PART YOU NEED TO REPLACE ✅✅✅
+    document.addEventListener('DOMContentLoaded', () => {
+        const firebaseConfig = { apiKey: "AIzaSyCgbaRR6ezvswehl1Q21ICHgBtXZ9bcLwA", authDomain: "my-movies-admin.firebaseapp.com", projectId: "my-movies-admin", storageBucket: "my-movies-admin.firebasestorage.app", messagingSenderId: "492775126123", appId: "1:492775126123:web:7ad51095ff15f61ed12d2e" };
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(app);
+        const auth = firebase.auth(app);
+
+        const loginScreen = document.getElementById('loginScreen');
+        const adminPanel = document.getElementById('adminPanel');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const pageTitle = document.getElementById('pageTitle');
+        const adminEmailDisplay = document.getElementById('adminEmailDisplay'); // Get the element by its new ID
+        
+        const dashboardPage = document.getElementById('dashboardPage');
+        const manageContentPage = document.getElementById('manageContentPage');
+        const searchManageBtn = document.getElementById('searchManageBtn');
+        const manageSearchResults = document.getElementById('manageSearchResults');
+        const manageMessage = document.getElementById('manageMessage');
+        const menuToggleBtn = document.getElementById('menuToggleBtn');
+        const mainMenu = document.getElementById('mainMenu');
+
+        const setLoading = (btn, isLoading) => { /* Unchanged */ };
+        const displayMessage = (el, msg, type) => { if(el) { el.textContent = msg; el.className = `message ${type}`; el.style.display = 'block'; setTimeout(() => { el.style.display = 'none'; }, 5000); }};
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                adminPanel.style.display = 'flex';
+                loginScreen.style.display = 'none';
+                document.body.style.alignItems = 'flex-start';
+                document.body.style.justifyContent = 'flex-start';
+                // ✅ CORRECTED: Dynamically displays the currently logged-in user's email
+                adminEmailDisplay.textContent = `Logged in as: ${user.email}`;
+            } else {
+                loginScreen.style.display = 'flex';
+                adminPanel.style.display = 'none';
+                document.body.style.alignItems = 'center';
+                document.body.style.justifyContent = 'center';
+            }
+        });
+
+        if (document.getElementById('loginForm')) {
+            document.getElementById('loginForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                try { await auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value); } 
+                catch (error) { displayMessage(document.getElementById('loginMessage'), 'Invalid email or password.', 'error'); }
+            });
+        }
+
+        if (logoutBtn) logoutBtn.addEventListener('click', () => auth.signOut());
+        if (menuToggleBtn) menuToggleBtn.addEventListener('click', () => mainMenu.classList.toggle('open'));
+
+        document.getElementById('viewAllContentCard').addEventListener('click', (e) => {
+            e.preventDefault();
+            dashboardPage.classList.remove('active');
+            manageContentPage.classList.add('active');
+            pageTitle.textContent = "Search & Manage Content";
+        });
+
+        searchManageBtn.addEventListener('click', async () => {
+            setLoading(searchManageBtn, true);
+            manageSearchResults.innerHTML = '';
+            const term = document.getElementById('manageContentIdentifier').value.trim().toLowerCase();
+            if (!term) { setLoading(searchManageBtn, false); return; }
+            try {
+                const snapshot = await db.collection('movies').get();
+                const results = snapshot.docs.filter(doc => {
+                    const data = doc.data();
+                    return (data.title && data.title.toLowerCase().includes(term)) ||
+                           (data.tmdbId && data.tmdbId.toString() === term) ||
+                           (data.unique_reference_id && data.unique_reference_id.includes(term));
+                });
+                if (results.length === 0) {
+                    manageSearchResults.innerHTML = '<p>No results found.</p>';
+                } else {
+                    results.forEach(doc => {
+                        const item = { id: doc.id, ...doc.data() };
+                        manageSearchResults.innerHTML += `
+                            <div class="result-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: var(--primary-bg); border-radius: 8px; margin-bottom: 10px;">
+                                <span>${item.title} (VJ: ${item.vjName}) - [${item.contentType}]</span>
+                                <div class="result-item-actions" style="display: flex; gap: 10px;">
+                                    <button class="action-btn edit" data-id="${item.id}" style="background:var(--accent-color);color:var(--primary-bg);border:none;padding:8px 12px;border-radius:4px;cursor:pointer;">Edit</button>
+                                    <button class="action-btn delete" data-id="${item.id}" style="background:var(--danger-color);color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;">Delete</button>
+                                </div>
+                            </div>`;
+                    });
+                }
+            } catch (err) {
+                displayMessage(manageMessage, `Error: ${err.message}`, 'error');
+            } finally {
+                setLoading(searchManageBtn, false);
+            }
+        });
+
+        manageSearchResults.addEventListener('click', async e => {
+            const target = e.target.closest('button');
+            if (!target) return;
+
+            if (target.classList.contains('edit')) {
+                loadContentForEditing(target.dataset.id);
+            }
+            if (target.classList.contains('delete')) {
+                if (confirm('Are you sure you want to permanently delete this item?')) {
+                    try {
+                        await db.collection('movies').doc(target.dataset.id).delete();
+                        displayMessage(manageMessage, 'Item deleted successfully.', 'success');
+                        target.closest('.result-item').remove();
+                    } catch (err) {
+                        displayMessage(manageMessage, `Error deleting: ${err.message}`, 'error');
+                    }
+                }
+            }
+        });
+        
+        async function loadContentForEditing(docId) {
+            try {
+                const doc = await db.collection('movies').doc(docId).get();
+                if (!doc.exists) { alert('Error: Document not found.'); return; }
+                const data = doc.data();
+                if (data.contentType === 'tv') {
+                    window.location.href = `manage-series.html?id=${docId}`;
+                } else {
+                    window.location.href = `manage-movies.html?id=${docId}`;
+                }
+            } catch (error) {
+                alert(`Failed to load content for editing: ${error.message}`);
+            }
+        }
+    });
+</script>
+</body>
+</html>

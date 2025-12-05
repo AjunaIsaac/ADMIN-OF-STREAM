@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Content - Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- PocketBase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
+    <style>
+        :root {
+            --primary-bg: #0A0F2A; --card-bg: #1C2141; --accent-color: #DFFF00;
+            --text-primary: #FFFFFF; --text-secondary: #a9a9b3; --logout-bg: #e74c3c;
+            --warn-color: #f39c12; --danger-color: #f44336; --success-color: #27ae60;
+        }
+        body { background-color: var(--primary-bg); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; }
+        #adminPanel { display: flex; min-height: 100vh; }
+        #mainMenu { width: 250px; flex-shrink: 0; background-color: #111533; transition: transform 0.3s ease; z-index: 1000; }
+        .main-content { flex-grow: 1; padding: 1.5rem; }
+        .admin-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 10px; }
+        .admin-header h1 { color: var(--accent-color); font-size: 2.5rem; }
+        .user-info { color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; }
+        .logout-btn { display: none; } 
+        #mainMenu a { padding: 15px 20px; text-decoration: none; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 15px; }
+        #mainMenu a.active { background-color: var(--accent-color); color: var(--primary-bg); font-weight: bold; }
+        .menu-header { color: var(--accent-color); padding: 10px 20px; font-size: 1.5em; text-align: center;}
+        .page-container { margin-top: 1rem; }
+        .filter-bar { display: flex; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 15px; margin-bottom: 20px; border-bottom: 1px solid #33395b; }
+        .filter-bar::-webkit-scrollbar { display: none; }
+        .filter-btn { background: transparent; border: 1px solid #33395b; color: var(--text-secondary); padding: 10px 20px; border-radius: 20px; margin-right: 10px; cursor: pointer; white-space: nowrap; font-size: 1rem; }
+        .filter-btn.active { background: linear-gradient(90deg, #FF416C, #FFDE00); color: white; border-color: transparent; font-weight: bold; }
+        .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .content-card { background-color: var(--card-bg); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; position: relative; border: 1px solid #33395b; }
+        .content-card .poster-container { position: relative; width: 100%; padding-top: 150%; }
+        .content-card img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .vj-tag { position: absolute; top: 8px; left: 8px; background-color: rgba(10, 15, 42, 0.8); color: var(--accent-color); padding: 4px 8px; border-radius: 5px; font-size: 0.8rem; font-weight: bold; border: 1px solid var(--accent-color); }
+        .content-card-actions { display: flex; gap: 10px; padding: 10px; background-color: #121740; }
+        .action-btn { flex: 1; padding: 10px !important; font-size: 0.9rem !important; border: none; border-radius: 5px; font-weight: 600; cursor: pointer; text-align: center; }
+        .edit { background-color: var(--warn-color); color: white; }
+        .delete { background-color: var(--danger-color); color: white; }
+        .message { margin-top: 20px; padding: 12px; border-radius: 5px; text-align: center; display: none; }
+        .message.success { background-color: var(--success-color); } .message.error { background-color: var(--danger-color); }
+        #menuToggleBtn { display: none; }
+        @media (max-width: 768px) {
+            #menuToggleBtn { display: flex; position: fixed; top: 15px; left: 15px; z-index: 1001; background: var(--card-bg); border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 5px; width: 40px; height: 40px; align-items: center; justify-content: center; }
+            #mainMenu { position: fixed; transform: translateX(-100%); }
+            #mainMenu.open { transform: translateX(0); }
+            .main-content { padding-top: 80px; }
+            .movie-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="adminPanel">
+<nav id="mainMenu">
+            <div class="menu-header">Admin Menu</div>
+            <a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <hr style="border-color: #333; margin: 10px 0;">
+            <a href="manage-movies.html"><i class="fas fa-film"></i> Manage Movies</a>
+            <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
+            <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
+            <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
+            <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
+            <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
+        </nav>
+        <div class="main-content">
+            <div class="admin-header">
+                <div style="display: flex; align-items: center;">
+                    <button id="menuToggleBtn"><i class="fas fa-bars"></i></button>
+                    <h1>Browse All Content</h1>
+                </div>
+                <button class="logout-btn" id="logoutBtn">Logout <i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            <p class="user-info" id="adminEmailDisplay">Admin Mode (Login Bypassed)</p>
+            <div id="allContentPage" class="page-container active">
+                <div class="filter-bar" id="categoryFilterBar"></div>
+                <div id="allContentContainer" class="movie-grid"></div>
+                <div id="allContentMessage" class="message"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Initialize PocketBase Connection ---
+    const pb = new PocketBase('https://db.jmovies.site');
+    pb.autoCancellation(false);
+
+    // --- DOM Elements ---
+    const menuToggleBtn = document.getElementById('menuToggleBtn');
+    const mainMenu = document.getElementById('mainMenu');
+    const allContentContainer = document.getElementById('allContentContainer');
+    const allContentMessage = document.getElementById('allContentMessage');
+    const categoryFilterBar = document.getElementById('categoryFilterBar');
+
+    // --- Filter Categories ---
+    // The 'value' here is just an ID for our script. The logic below maps it to DB fields.
+    const CATEGORIES = [
+        { value: 'all', label: 'All Latest' },
+        { value: 'movie', label: 'Movies' },
+        { value: 'tv', label: 'TV Shows' },
+        { value: 'indian', label: 'Indian' },
+        { value: 'animation', label: 'Animation' },
+        { value: 'horror', label: 'Horror' },
+        { value: 'comedy', label: 'Comedy' },
+        { value: 'romance', label: 'Romance' },
+        { value: 'scifi-fantasy', label: 'Sci-fi & Fantasy' },
+        { value: 'action-thriller', label: 'Action & Thriller' },
+        { value: 'high-school', label: 'High School' }
+    ];
+
+    // --- Utility Functions ---
+    const displayMessage = (el, msg, type) => {
+        if(el) {
+            el.textContent = msg;
+            el.className = `message ${type}`;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+    };
+
+    if (menuToggleBtn) menuToggleBtn.addEventListener('click', () => mainMenu.classList.toggle('open'));
+
+    function setupFilters() {
+        categoryFilterBar.innerHTML = '';
+        CATEGORIES.forEach(cat => {
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.dataset.filter = cat.value;
+            btn.textContent = cat.label;
+            if (cat.value === 'all') btn.classList.add('active');
+            categoryFilterBar.appendChild(btn);
+        });
+    }
+
+    categoryFilterBar.addEventListener('click', e => {
+        if (e.target.matches('.filter-btn')) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            displayAllContent(e.target.dataset.filter);
+        }
+    });
+
+    async function displayAllContent(filter) {
+        if (!allContentContainer) return;
+        allContentContainer.innerHTML = '<p class="message info" style="display:block; grid-column: 1 / -1;">Loading content...</p>';
+        
+        try {
+            let filterString = '';
+
+            // --- 🔧 NEW FILTER LOGIC (MAPPING BUTTONS TO DB FIELDS) ---
+            if (filter !== 'all') {
+                if (filter === 'movie' || filter === 'tv') {
+                    // Check ContentType field
+                    filterString = `contentType = "${filter}"`;
+                } 
+                else if (filter === 'action-thriller') {
+                    // Check Genres for Action OR Thriller
+                    filterString = `genres ~ "ACTION" || genres ~ "THRILLER"`;
+                }
+                else if (filter === 'scifi-fantasy') {
+                    // Check Genres for Sci Fi OR Fantasy
+                    filterString = `genres ~ "SCI FI" || genres ~ "FANTASY"`;
+                }
+                else if (filter === 'romance') {
+                    // Check Genres for Romance or Love Story
+                    filterString = `genres ~ "ROMANCE" || genres ~ "LOVE STORY"`;
+                }
+                else {
+                    // For single words (horror, comedy, animation, etc.)
+                    // We convert "horror" to "HORROR" to match your DB list
+                    const dbValue = filter.toUpperCase();
+                    filterString = `genres ~ "${dbValue}"`;
+                }
+            }
+
+            // Fetch from PocketBase
+            const records = await pb.collection('media').getFullList({
+                sort: '-created',
+                filter: filterString
+            });
+
+            if (records.length === 0) {
+                allContentContainer.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding:20px;">No content found for this category.</p>`;
+                return;
+            }
+
+            allContentContainer.innerHTML = '';
+            records.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'content-card';
+                
+                // Handle VJ Name (safely check if array exists)
+                let vjName = 'N/A';
+                if (item.vjs && Array.isArray(item.vjs) && item.vjs.length > 0) {
+                    vjName = item.vjs[0]; // Take first VJ
+                } else if (item.vjs && typeof item.vjs === 'string') {
+                    vjName = item.vjs; // Handle if saved as text
+                }
+
+                card.innerHTML = `
+                    <div class="poster-container">
+                        <img src="${item.poster || 'https://placehold.co/400x600?text=N/A'}" alt="${item.title}">
+                        <div class="vj-tag">${vjName}</div>
+                    </div>
+                    <div class="content-card-actions">
+                        <button class="action-btn edit" data-id="${item.id}" data-type="${item.contentType}">Edit</button>
+                        <button class="action-btn delete" data-id="${item.id}">Delete</button>
+                    </div>`;
+                allContentContainer.appendChild(card);
+            });
+        } catch (err) {
+            console.error("Filter Error:", err);
+            displayMessage(allContentMessage, `Error: ${err.message}`, 'error');
+        }
+    }
+
+    // --- Action Buttons ---
+    allContentContainer.addEventListener('click', async (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+
+        const recordId = target.dataset.id;
+        const contentType = target.dataset.type;
+
+        if (target.classList.contains('edit')) {
+            if (contentType === 'tv') {
+                window.location.href = `manage-series.html?id=${recordId}`;
+            } else {
+                window.location.href = `manage-movies.html?id=${recordId}`;
+            }
+        }
+
+        if (target.classList.contains('delete')) {
+            if (confirm('Are you sure you want to permanently delete this item?')) {
+                try {
+                    await pb.collection('media').delete(recordId);
+                    displayMessage(allContentMessage, 'Item deleted successfully.', 'success');
+                    target.closest('.content-card').remove();
+                } catch (err) {
+                    displayMessage(allContentMessage, `Error deleting: ${err.message}`, 'error');
+                }
+            }
+        }
+    });
+
+    // --- Initial Load ---
+    setupFilters();
+    displayAllContent('all');
+});
+</script>
+</body>
+</html>
