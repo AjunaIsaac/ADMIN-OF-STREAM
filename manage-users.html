@@ -72,7 +72,15 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const firebaseConfig = { apiKey: "AIzaSyCgbaRR6ezvswehl1Q21ICHgBtXZ9bcLwA", authDomain: "my-movies-admin.firebaseapp.com", projectId: "my-movies-admin", storageBucket: "my-movies-admin.firebasestorage.app", messagingSenderId: "492775126123", appId: "1:492775126123:web:7ad51095ff15f61ed12d2e" };
+    const firebaseConfig = {
+    apiKey: "AIzaSyAuhAOtwhENHLAxwl8jtwafxFx3M2TWxDk",
+    authDomain: "stream-zone-movies1.firebaseapp.com",
+    projectId: "stream-zone-movies1",
+    storageBucket: "stream-zone-movies1.firebasestorage.app",
+    messagingSenderId: "319851420625",
+    appId: "1:319851420625:web:73fa1d0302de6755295ef0",
+    measurementId: "G-W139021D8L"
+};
     const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore(app);
     const auth = firebase.auth(app);
