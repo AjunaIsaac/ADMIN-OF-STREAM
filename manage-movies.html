@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Movies - Admin Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- PocketBase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
     <style>
         :root {
@@ -56,7 +55,6 @@
 <body>
 
     <nav id="mainMenu">
-        <!-- Your navigation menu remains the same -->
         <a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
         <hr style="border-color: #333; margin: 10px 0;">
         <a href="manage-movies.html" class="active"><i class="fas fa-film"></i> Manage Movies</a>
@@ -92,13 +90,12 @@
 
             <form id="movieForm">
                 <input type="hidden" id="recordId"> 
-                <input type="hidden" id="tmdb_id"> <!-- ✅ CHANGED: to tmdb_id -->
+                <input type="hidden" id="tmdb_id">
                 <input type="hidden" id="posterUrl">
                 <input type="hidden" id="backdropUrl">
 
                 <div class="form-group">
                     <label>Stream Link (Required)</label>
-                    <!-- ✅ CHANGED: id from videoUrl to stream_link -->
                     <input type="text" id="stream_link" placeholder="https://..." required>
                 </div>
                 
@@ -108,8 +105,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Tags (Select all that apply for Home Page sections)</label>
-                    <!-- ✅ CHANGED: Renamed container for clarity -->
+                    <label>Tags (For Home Page Sections & Genres)</label>
                     <div id="tagsContainer" class="checkbox-group"></div>
                 </div>
 
@@ -127,14 +123,21 @@
     pb.autoCancellation(false);
     const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5"; 
 
-    // ✅ COMBINED: All categories into a single 'tags' list
+    // ✅ DEFINED a separate list for just genres
+    const GENRE_LIST = [
+        "ACTION", "ADVENTURE", "LOVE STORY", "CRIME", "FAMILY", "SCI FI", 
+        "KUNGU FU", "DRAMA", "SPORT", "THRILLER", "FANTASY", "HISTORY", "MYSTERY", "WAR",
+        "HORROR", "ANIMATION", "COMEDY"
+    ];
+    
+    // This list now contains both sections and genres
     const TAGS_LIST = [
         "latest_uploads", "romance", "recent_movies", "k_dramas", "indian", "horror",
         "action-thriller", "animation", "scifi-fantasy", "adventure", "high-school", 
-        "comedy", "most_liked", "upcoming_shows", "ACTION", "ADVENTURE", "LOVE STORY",
-        "CRIME", "FAMILY", "SCI FI", "KUNGU FU", "DRAMA", "SPORT", "THRILLER",
-        "FANTASY", "HISTORY", "MYSTERY", "WAR"
-    ];
+        "comedy", "most_liked", "upcoming_shows",
+        ...GENRE_LIST // Automatically include all genres in the main tags list
+    ].filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
+
     const VJ_LIST = ["VJ JUNIOR", "VJ TONNY", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
 
     const searchView = document.getElementById('searchView');
@@ -149,7 +152,8 @@
         list.sort().forEach(item => {
             const label = document.createElement('label');
             label.className = 'checkbox-label';
-            label.innerHTML = `<input type="checkbox" name="${name}" value="${item}"> ${item.replace(/_/g, ' ').replace(/-/g, ' ')}`;
+            const displayText = item.replace(/_/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            label.innerHTML = `<input type="checkbox" name="${name}" value="${item}"> ${displayText}`;
             container.appendChild(label);
         });
     }
@@ -172,7 +176,6 @@
             const data = await res.json();
             searchResults.innerHTML = '';
             if (!data.results?.length) { searchResults.innerHTML = '<p>No results.</p>'; return; }
-            
             data.results.forEach(movie => {
                 const card = document.createElement('div');
                 card.className = 'movie-card';
@@ -193,29 +196,23 @@
         document.getElementById('displayTitle').textContent = fullData.title;
         document.getElementById('displayOverview').textContent = fullData.overview;
         document.getElementById('displayPoster').src = fullData.poster_path ? `https://image.tmdb.org/t/p/w200${fullData.poster_path}` : '';
-        
-        // ✅ CHANGED: tmdbId to tmdb_id
         document.getElementById('tmdb_id').value = fullData.id;
         document.getElementById('posterUrl').value = fullData.poster_path ? `https://image.tmdb.org/t/p/w500${fullData.poster_path}` : '';
         document.getElementById('backdropUrl').value = fullData.backdrop_path ? `https://image.tmdb.org/t/p/original${fullData.backdrop_path}` : '';
 
-        // Auto-select Tags from TMDB genres
         document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
         if (fullData.genres) {
             fullData.genres.forEach(g => {
                 const tmdbGenre = g.name.toUpperCase();
-                // Find a matching tag in our list
-                const matchingTag = TAGS_LIST.find(tag => tag.toUpperCase() === tmdbGenre);
+                const matchingTag = TAGS_LIST.find(tag => tag.toUpperCase() === tmdbGenre || (tmdbGenre === 'SCIENCE FICTION' && tag === 'SCI FI'));
                 if(matchingTag){
                     const cb = document.querySelector(`input[name="tags"][value="${matchingTag}"]`);
                     if(cb) cb.checked = true;
                 }
             });
         }
-        // ✅ ADDED: Automatically check 'latest_uploads' for new entries
         const latestUploadsCheckbox = document.querySelector('input[name="tags"][value="latest_uploads"]');
         if(latestUploadsCheckbox) latestUploadsCheckbox.checked = true;
-
 
         searchView.style.display = 'none';
         detailsView.style.display = 'block';
@@ -228,13 +225,11 @@
             document.getElementById('displayTitle').textContent = record.title;
             document.getElementById('displayOverview').textContent = record.description;
             document.getElementById('displayPoster').src = record.poster || '';
-            // ✅ CHANGED: videoUrl to stream_link, tmdbId to tmdb_id
             document.getElementById('stream_link').value = record.stream_link || '';
             document.getElementById('tmdb_id').value = record.tmdb_id || '';
             document.getElementById('posterUrl').value = record.poster || '';
             document.getElementById('backdropUrl').value = record.backdrop || '';
 
-            // Checkboxes
             const checkBoxes = (name, values) => {
                 if(values && Array.isArray(values)) values.forEach(v => {
                     const cb = document.querySelector(`input[name="${name}"][value="${v}"]`);
@@ -242,7 +237,6 @@
                 });
             };
             checkBoxes('vjs', record.vjs);
-            // ✅ CHANGED: genres/type to tags
             checkBoxes('tags', record.tags); 
 
             searchView.style.display = 'none';
@@ -257,7 +251,13 @@
 
         const getChecked = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
 
-        // ✅ UPDATED: The data object to match server schema
+        // ✅ Get ALL selected tags (sections + genres)
+        const allSelectedTags = getChecked('tags');
+        
+        // ✅ Filter the selected tags to find ONLY the ones that are genres
+        const selectedGenres = allSelectedTags.filter(tag => GENRE_LIST.includes(tag));
+
+        // ✅ UPDATED: The data object now includes the 'genres' field
         const data = {
             title: document.getElementById('displayTitle').textContent,
             tmdb_id: document.getElementById('tmdb_id').value,
@@ -266,17 +266,11 @@
             poster: document.getElementById('posterUrl').value,
             backdrop: document.getElementById('backdropUrl').value,
             vjs: getChecked('vjs'),
-            tags: getChecked('tags'), // This now contains genres and categories
+            tags: allSelectedTags, 
+            genres: selectedGenres, // Save the filtered genres here
             contentType: 'movie'
         };
         
-        // Remove empty or null fields to keep the database clean
-        Object.keys(data).forEach(key => {
-            if (data[key] === null || data[key] === '' || (Array.isArray(data[key]) && data[key].length === 0)) {
-                delete data[key];
-            }
-        });
-
         try {
             const id = document.getElementById('recordId').value;
             if (id) {
@@ -299,7 +293,6 @@
     });
 
     document.getElementById('cancelBtn').addEventListener('click', () => {
-        // More robust cancel, checks if it's an edit or a new add
         const id = document.getElementById('recordId').value;
         if(id) {
             window.location.href='all-content.html';
