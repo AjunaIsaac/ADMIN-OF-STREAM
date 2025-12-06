@@ -66,7 +66,7 @@
         <a href="manage-series.html" class="active"><i class="fas fa-tv"></i> Manage Series</a>
         <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
         <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
-        <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
+        <a href="https://admin.streamzonemovies.online/user_management"><i class="fas fa-users-cog"></i> User Management</a>
         <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
     </nav>
 
@@ -114,7 +114,7 @@
                         <summary>Click for JSON Example</summary>
                         <pre id="jsonExample"></pre>
                     </details>
-                    <textarea id="episodesJsonInput" placeholder="This will be auto-filled from TMDB. You just need to add the 'url' for each episode."></textarea>
+                    <textarea id="episodesJsonInput" placeholder="This will be auto-filled from TMDB. You just need to add the 'stream_link' for each episode."></textarea>
                 </div>
 
                 <div style="display: flex; gap: 15px; margin-top: 20px;">
@@ -130,9 +130,11 @@
     const pb = new PocketBase('https://db.streamzonemovies.online');
     const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5";
 
+    // --- DATA LISTS ---
     const VJ_LIST = ["VJ JUNIOR", "VJ TONNY", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
-    const TAGS_LIST = ["latest_uploads","Latest-TV-Series", "recent_tv_shows", "western_series", "k_dramas", "indian", "horror", "action-thriller", "animation", "scifi-fantasy", "adventure", "high-school", "comedy", "most_liked", "upcoming_shows", "ACTION", "HORROR", "ADVENTURE", "LOVE STORY", "COMEDY", "CRIME", "FAMILY", "SCI FI", "ROMANCE", "KUNGU FU", "DRAMA", "SPORT", "THRILLER", "ANIMATION", "DOCUMENTARY", "FANTASY", "HISTORY", "MYSTERY", "WAR"];
+    const TAGS_LIST = ["latest_uploads", "recent_tv_shows", "western_series", "k_dramas", "indian", "horror", "action-thriller", "animation", "scifi-fantasy", "adventure", "high-school", "comedy", "most_liked", "upcoming_shows", "ACTION", "HORROR", "ADVENTURE", "LOVE STORY", "COMEDY", "CRIME", "FAMILY", "SCI FI", "ROMANCE", "KUNGU FU", "DRAMA", "SPORT", "THRILLER", "ANIMATION", "DOCUMENTARY", "FANTASY", "HISTORY", "MYSTERY", "WAR"];
 
+    // --- DOM ELEMENTS ---
     const searchView = document.getElementById('searchView');
     const detailsView = document.getElementById('detailsView');
     const searchResults = document.getElementById('searchResultsContainer');
@@ -140,12 +142,12 @@
     const saveBtn = document.getElementById('saveBtn');
     const episodesJsonInput = document.getElementById('episodesJsonInput');
 
+    // --- SETUP ---
     document.addEventListener('DOMContentLoaded', () => {
         createCheckboxes(VJ_LIST, 'vjContainer', 'vjs');
         createCheckboxes(TAGS_LIST, 'tagsContainer', 'tags');
 
-        // ✅ CHANGED: Example now uses 'url' to match the app's requirement
-        const example = [{ season: 1, episode: 1, title: "Episode Title From TMDB", url: "YOUR_VIDEO_URL_HERE" }];
+        const example = [{ season: 1, episode: 1, title: "Episode Title From TMDB", stream_link: "YOUR_VIDEO_URL_HERE" }];
         document.getElementById('jsonExample').textContent = JSON.stringify(example, null, 2);
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -165,6 +167,7 @@
         });
     }
 
+    // --- SEARCH & DATA LOADING ---
     document.getElementById('searchTmdbBtn').addEventListener('click', async () => {
         const query = document.getElementById('seriesSearchQuery').value;
         if (!query) return;
@@ -192,6 +195,7 @@
             const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}`);
             const data = await res.json();
 
+            // Populate main details
             document.getElementById('seriesTitle').textContent = data.name;
             document.getElementById('seriesOverview').textContent = data.overview;
             document.getElementById('seriesPoster').src = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
@@ -199,6 +203,7 @@
             document.getElementById('posterUrl').value = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
             document.getElementById('backdropUrl').value = data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : '';
 
+            // Auto-select tags if it's a new entry
             if (data.genres && !existingRecord) {
                 document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
                 data.genres.forEach(g => {
@@ -208,6 +213,7 @@
                 });
             }
 
+            // Fetch all seasons and build the JSON for episodes
             const episodePromises = data.seasons
                 .filter(s => s.season_number > 0 && s.episode_count > 0)
                 .map(s => fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${s.season_number}?api_key=${TMDB_API_KEY}`).then(res => res.json()));
@@ -217,23 +223,26 @@
             let episodesForJson = [];
             seasonsData.forEach(seasonData => {
                 seasonData.episodes.forEach(ep => {
-                    let video_url = "";
+                    // If editing, find the existing stream link
+                    let stream_link = "";
                     if (existingRecord && existingRecord.episodes) {
                         const savedEp = existingRecord.episodes.find(e => e.season === ep.season_number && e.episode === ep.episode_number);
-                        if (savedEp) video_url = savedEp.url || ""; // Read 'url' from existing record
+                        if (savedEp) stream_link = savedEp.stream_link || "";
                     }
                     episodesForJson.push({
                         season: ep.season_number,
                         episode: ep.episode_number,
                         title: ep.name || `Episode ${ep.episode_number}`,
-                        url: video_url // ✅ CHANGED: Output 'url' for the JSON
+                        stream_link: stream_link
                     });
                 });
             });
+
             episodesJsonInput.value = JSON.stringify(episodesForJson, null, 2);
+
         } catch (e) { 
             alert(`Error fetching data from TMDB: ${e.message}`);
-            episodesJsonInput.value = `// Error loading episodes.`;
+            episodesJsonInput.value = `// Error loading episodes. Please check TMDB ID or API key.`;
         }
     }
     
@@ -243,13 +252,17 @@
             document.getElementById('recordId').value = record.id;
             saveBtn.textContent = "Update Series";
 
+            // Set checkboxes from saved record
             const setCheck = (name, vals) => { if(vals) vals.forEach(v => { const cb = document.querySelector(`input[name="${name}"][value="${v}"]`); if(cb) cb.checked=true; }) };
             setCheck('vjs', record.vjs);
             setCheck('tags', record.tags);
 
+            // If the record has a TMDB ID, use it to load fresh data and merge links
+            // Otherwise, just populate with the saved data
             if (record.tmdb_id) {
                 await loadTmdbDetails(record.tmdb_id, record);
             } else {
+                // Fallback for records without a TMDB ID
                 searchView.style.display = 'none'; detailsView.style.display = 'block';
                 document.getElementById('seriesTitle').textContent = record.title;
                 document.getElementById('seriesOverview').textContent = record.description;
@@ -259,20 +272,21 @@
         } catch (e) { alert(`Error loading series from database: ${e.message}`); }
     }
 
+    // --- SAVE LOGIC ---
     document.getElementById('seriesForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         saveBtn.disabled = true; saveBtn.innerText = "Saving...";
         msgEl.style.display = 'none';
 
+        // 1. Parse and Validate Episodes JSON
         let episodes;
         try {
             episodes = JSON.parse(episodesJsonInput.value);
             if (!Array.isArray(episodes)) throw new Error("JSON data must be an array.");
             if (episodes.length > 0) {
                 const firstEp = episodes[0];
-                // ✅ CHANGED: Validation now checks for 'url' to match the app's needs.
-                if (typeof firstEp.season !== 'number' || typeof firstEp.episode !== 'number' || typeof firstEp.url !== 'string') {
-                    throw new Error("Each episode must have season (number), episode (number), and url (string).");
+                if (typeof firstEp.season !== 'number' || typeof firstEp.episode !== 'number' || typeof firstEp.stream_link !== 'string') {
+                    throw new Error("Each episode must have season (number), episode (number), and stream_link (string).");
                 }
             }
         } catch (err) {
@@ -283,6 +297,7 @@
             return;
         }
         
+        // 2. Collect data from the rest of the form
         const getChecked = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
         const allSelectedTags = getChecked('tags');
         const genreTags = allSelectedTags.filter(tag => TAGS_LIST.slice(TAGS_LIST.indexOf("ACTION")).includes(tag));
@@ -300,6 +315,7 @@
             contentType: 'tv'
         };
 
+        // 3. Save to PocketBase
         try {
             const id = document.getElementById('recordId').value;
             if (id) {

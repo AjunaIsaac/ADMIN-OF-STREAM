@@ -21,34 +21,28 @@
         
         .main-content { flex-grow: 1; padding: 2rem; overflow-y: auto; }
         
-        /* Views */
         #searchView, #detailsView { background-color: var(--card-bg); padding: 2rem; border-radius: 15px; max-width: 900px; margin: 0 auto; }
         
         h2 { color: var(--accent-color); margin-top: 0; }
         
-        /* Form Elements */
         .form-group { margin-bottom: 1.5rem; }
         label { display: block; margin-bottom: 8px; color: var(--text-secondary); }
         input, textarea, select { width: 100%; background-color: var(--input-bg); border: 1px solid #33395b; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; }
         
-        /* Buttons */
         .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 1rem; }
         .btn-primary { background: linear-gradient(90deg, #FF416C, #FFDE00); color: white; }
         .btn-secondary { background: #33395b; color: white; }
         .btn-cancel { background: #555; color: white; }
         
-        /* Search Results */
         #searchResultsContainer { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .movie-card { background-color: var(--primary-bg); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s; border: 1px solid #33395b; }
         .movie-card:hover { transform: translateY(-5px); border-color: var(--accent-color); }
         .movie-card img { width: 100%; height: 300px; object-fit: cover; }
         .movie-card h3 { padding: 10px; font-size: 0.9rem; margin: 0; text-align: center; }
 
-        /* Movie Details Header */
         #detailsHeader { display: flex; gap: 20px; margin-bottom: 20px; border-bottom: 1px solid #33395b; padding-bottom: 20px; }
-        #moviePoster { width: 120px; border-radius: 8px; }
+        #displayPoster { width: 120px; border-radius: 8px; }
         
-        /* Checkboxes */
         .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; max-height: 200px; overflow-y: auto; background: var(--input-bg); padding: 10px; border-radius: 8px; }
         .checkbox-label { display: flex; align-items: center; gap: 8px; background: #161b33; padding: 5px 10px; border-radius: 4px; border: 1px solid #33395b; font-size: 0.9rem; width: auto; cursor: pointer; }
         .checkbox-label:hover { border-color: var(--accent-color); }
@@ -62,20 +56,19 @@
 <body>
 
     <nav id="mainMenu">
-            <div class="menu-header">Admin Menu</div>
-            <a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-            <hr style="border-color: #333; margin: 10px 0;">
-            <a href="manage-movies.html"><i class="fas fa-film"></i> Manage Movies</a>
-            <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
-            <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
-            <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
-            <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
-            <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
-        </nav>
+        <!-- Your navigation menu remains the same -->
+        <a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <hr style="border-color: #333; margin: 10px 0;">
+        <a href="manage-movies.html" class="active"><i class="fas fa-film"></i> Manage Movies</a>
+        <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
+        <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
+        <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
+        <a href="https://admin.streamzonemovies.online/user_management"><i class="fas fa-users-cog"></i> User Management</a>
+        <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
+    </nav>
 
     <div class="main-content">
         
-        <!-- VIEW 1: SEARCH TMDB (Default) -->
         <div id="searchView">
             <h2>Add New Movie</h2>
             <div class="form-group">
@@ -88,7 +81,6 @@
             <div id="searchResultsContainer"></div>
         </div>
 
-        <!-- VIEW 2: EDIT DETAILS (Hidden by default) -->
         <div id="detailsView" style="display: none;">
             <div id="detailsHeader">
                 <img id="displayPoster" src="" alt="Poster">
@@ -99,31 +91,26 @@
             </div>
 
             <form id="movieForm">
-                <!-- Hidden Fields to store data -->
-                <input type="hidden" id="recordId"> <!-- PocketBase ID -->
-                <input type="hidden" id="tmdbId">
+                <input type="hidden" id="recordId"> 
+                <input type="hidden" id="tmdb_id"> <!-- ✅ CHANGED: to tmdb_id -->
                 <input type="hidden" id="posterUrl">
                 <input type="hidden" id="backdropUrl">
-                <input type="hidden" id="releaseDate">
 
                 <div class="form-group">
-                    <label>VJ Name (Required)</label>
+                    <label>Stream Link (Required)</label>
+                    <!-- ✅ CHANGED: id from videoUrl to stream_link -->
+                    <input type="text" id="stream_link" placeholder="https://..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label>VJ Name</label>
                     <div id="vjContainer" class="checkbox-group"></div>
                 </div>
 
                 <div class="form-group">
-                    <label>Video URL</label>
-                    <input type="text" id="videoUrl" placeholder="https://..." required>
-                </div>
-
-                <div class="form-group">
-                    <label>Release Year</label>
-                    <input type="number" id="movieYear">
-                </div>
-
-                <div class="form-group">
-                    <label>Genres (Select multiple)</label>
-                    <div id="genreContainer" class="checkbox-group"></div>
+                    <label>Tags (Select all that apply for Home Page sections)</label>
+                    <!-- ✅ CHANGED: Renamed container for clarity -->
+                    <div id="tagsContainer" class="checkbox-group"></div>
                 </div>
 
                 <div style="display: flex; gap: 15px;">
@@ -136,76 +123,50 @@
 
     </div>
 <script>
-    // 1. Initialize PocketBase
-    const pb = new PocketBase('https://db.jmovies.site');
+    const pb = new PocketBase('https://db.streamzonemovies.online');
     pb.autoCancellation(false);
     const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5"; 
 
-    // 2. DATA LISTS
-    const VJ_LIST = ["VJ JUNIOR", "VJ TONNY", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
-    const GENRE_LIST = ["ACTION", "HORROR", "ADVENTURE", "LOVE STORY", "COMEDY", "CRIME", "FAMILY", "SCI FI", "ROMANCE", "KUNGU FU", "DRAMA", "SPORT", "THRILLER", "ANIMATION", "DOCUMENTARY", "FANTASY", "HISTORY", "MYSTERY", "WAR"];
-    
-    // ✅ NEW: Special Categories for Home Page Sections
-    const SPECIAL_CATEGORIES = [
-        { label: "Trending This Week", value: "trending" },
-        { label: "High School", value: "high-school" },
-        { label: "Latest on Jmovies", value: "latest_on_jmovies" }
+    // ✅ COMBINED: All categories into a single 'tags' list
+    const TAGS_LIST = [
+        "latest_uploads", "romance", "recent_movies", "k_dramas", "indian", "horror",
+        "action-thriller", "animation", "scifi-fantasy", "adventure", "high-school", 
+        "comedy", "most_liked", "upcoming_shows", "ACTION", "ADVENTURE", "LOVE STORY",
+        "CRIME", "FAMILY", "SCI FI", "KUNGU FU", "DRAMA", "SPORT", "THRILLER",
+        "FANTASY", "HISTORY", "MYSTERY", "WAR"
     ];
+    const VJ_LIST = ["VJ JUNIOR", "VJ TONNY", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
 
-    // DOM Elements
     const searchView = document.getElementById('searchView');
     const detailsView = document.getElementById('detailsView');
     const searchResults = document.getElementById('searchResultsContainer');
     const msgEl = document.getElementById('formMessage');
     const saveBtn = document.getElementById('saveBtn');
 
-    // --- HELPER: Create Checkboxes ---
-    function createCheckboxes(list, containerId, name, isObject = false) {
+    function createCheckboxes(list, containerId, name) {
         const container = document.getElementById(containerId);
-        // If container doesn't exist (like categories in old HTML), create it dynamically
-        if (!container) return; 
-        
         container.innerHTML = '';
-        list.forEach(item => {
+        list.sort().forEach(item => {
             const label = document.createElement('label');
             label.className = 'checkbox-label';
-            const value = isObject ? item.value : item;
-            const text = isObject ? item.label : item;
-            
-            label.innerHTML = `<input type="checkbox" name="${name}" value="${value}"> ${text}`;
+            label.innerHTML = `<input type="checkbox" name="${name}" value="${item}"> ${item.replace(/_/g, ' ').replace(/-/g, ' ')}`;
             container.appendChild(label);
         });
     }
 
-    // --- RUN SETUP ---
-    document.addEventListener('DOMContentLoaded', async () => {
-        // Setup lists
+    document.addEventListener('DOMContentLoaded', () => {
         createCheckboxes(VJ_LIST, 'vjContainer', 'vjs');
-        createCheckboxes(GENRE_LIST, 'genreContainer', 'genres');
-        
-        // ✅ Inject Category Container if missing in HTML
-        let catContainer = document.getElementById('categoryContainer');
-        if (!catContainer) {
-            const formGroup = document.createElement('div');
-            formGroup.className = 'form-group';
-            formGroup.innerHTML = `<label>Special Categories (Home Page)</label><div id="categoryContainer" class="checkbox-group"></div>`;
-            // Insert after Genres
-            document.getElementById('genreContainer').parentElement.after(formGroup);
-            catContainer = document.getElementById('categoryContainer');
-        }
-        createCheckboxes(SPECIAL_CATEGORIES, 'categoryContainer', 'type', true);
+        createCheckboxes(TAGS_LIST, 'tagsContainer', 'tags');
 
-        // Check Edit Mode
         const urlParams = new URLSearchParams(window.location.search);
         const editId = urlParams.get('id');
         if (editId) loadMovieForEditing(editId);
     });
 
-    // --- LOGIC: SEARCH TMDB ---
     document.getElementById('searchTmdbBtn').addEventListener('click', async () => {
         const query = document.getElementById('searchQuery').value;
         if (!query) return;
-        searchResults.innerHTML = '<p style="color:white">Searching...</p>';
+        searchResults.innerHTML = '<p>Searching...</p>';
         try {
             const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`);
             const data = await res.json();
@@ -233,31 +194,33 @@
         document.getElementById('displayOverview').textContent = fullData.overview;
         document.getElementById('displayPoster').src = fullData.poster_path ? `https://image.tmdb.org/t/p/w200${fullData.poster_path}` : '';
         
-        document.getElementById('tmdbId').value = fullData.id;
+        // ✅ CHANGED: tmdbId to tmdb_id
+        document.getElementById('tmdb_id').value = fullData.id;
         document.getElementById('posterUrl').value = fullData.poster_path ? `https://image.tmdb.org/t/p/w500${fullData.poster_path}` : '';
         document.getElementById('backdropUrl').value = fullData.backdrop_path ? `https://image.tmdb.org/t/p/original${fullData.backdrop_path}` : '';
-        document.getElementById('releaseDate').value = fullData.release_date;
-        document.getElementById('movieYear').value = fullData.release_date ? fullData.release_date.split('-')[0] : '';
 
-        // Auto-select Genres
-        document.querySelectorAll('input[name="genres"]').forEach(cb => cb.checked = false);
+        // Auto-select Tags from TMDB genres
+        document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
         if (fullData.genres) {
             fullData.genres.forEach(g => {
                 const tmdbGenre = g.name.toUpperCase();
-                document.querySelectorAll('input[name="genres"]').forEach(cb => {
-                    const myGenre = cb.value.toUpperCase();
-                    if (tmdbGenre.includes(myGenre) || (tmdbGenre.includes("SCI") && myGenre === "SCI FI")) {
-                        cb.checked = true;
-                    }
-                });
+                // Find a matching tag in our list
+                const matchingTag = TAGS_LIST.find(tag => tag.toUpperCase() === tmdbGenre);
+                if(matchingTag){
+                    const cb = document.querySelector(`input[name="tags"][value="${matchingTag}"]`);
+                    if(cb) cb.checked = true;
+                }
             });
         }
+        // ✅ ADDED: Automatically check 'latest_uploads' for new entries
+        const latestUploadsCheckbox = document.querySelector('input[name="tags"][value="latest_uploads"]');
+        if(latestUploadsCheckbox) latestUploadsCheckbox.checked = true;
+
 
         searchView.style.display = 'none';
         detailsView.style.display = 'block';
     }
 
-    // --- LOAD EDITING ---
     async function loadMovieForEditing(id) {
         try {
             const record = await pb.collection('media').getOne(id);
@@ -265,12 +228,11 @@
             document.getElementById('displayTitle').textContent = record.title;
             document.getElementById('displayOverview').textContent = record.description;
             document.getElementById('displayPoster').src = record.poster || '';
-            document.getElementById('videoUrl').value = record.videoUrl || '';
-            document.getElementById('tmdbId').value = record.tmdbId || '';
+            // ✅ CHANGED: videoUrl to stream_link, tmdbId to tmdb_id
+            document.getElementById('stream_link').value = record.stream_link || '';
+            document.getElementById('tmdb_id').value = record.tmdb_id || '';
             document.getElementById('posterUrl').value = record.poster || '';
             document.getElementById('backdropUrl').value = record.backdrop || '';
-            document.getElementById('releaseDate').value = record.releaseDate || '';
-            if(record.releaseDate) document.getElementById('movieYear').value = record.releaseDate.split('-')[0];
 
             // Checkboxes
             const checkBoxes = (name, values) => {
@@ -280,8 +242,8 @@
                 });
             };
             checkBoxes('vjs', record.vjs);
-            checkBoxes('genres', record.genres);
-            checkBoxes('type', record.type); // ✅ Load Special Categories
+            // ✅ CHANGED: genres/type to tags
+            checkBoxes('tags', record.tags); 
 
             searchView.style.display = 'none';
             detailsView.style.display = 'block';
@@ -289,40 +251,64 @@
         } catch (err) { alert(err.message); window.location.href='all-content.html'; }
     }
 
-    // --- SAVE ---
     document.getElementById('movieForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         saveBtn.disabled = true; saveBtn.innerText = "Processing...";
 
         const getChecked = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
 
+        // ✅ UPDATED: The data object to match server schema
         const data = {
             title: document.getElementById('displayTitle').textContent,
-            tmdbId: document.getElementById('tmdbId').value,
+            tmdb_id: document.getElementById('tmdb_id').value,
             description: document.getElementById('displayOverview').textContent,
-            videoUrl: document.getElementById('videoUrl').value,
+            stream_link: document.getElementById('stream_link').value,
             poster: document.getElementById('posterUrl').value,
             backdrop: document.getElementById('backdropUrl').value,
-            releaseDate: document.getElementById('releaseDate').value,
             vjs: getChecked('vjs'),
-            genres: getChecked('genres'),
-            type: getChecked('type'), // ✅ Save Special Categories
+            tags: getChecked('tags'), // This now contains genres and categories
             contentType: 'movie'
         };
+        
+        // Remove empty or null fields to keep the database clean
+        Object.keys(data).forEach(key => {
+            if (data[key] === null || data[key] === '' || (Array.isArray(data[key]) && data[key].length === 0)) {
+                delete data[key];
+            }
+        });
 
         try {
             const id = document.getElementById('recordId').value;
-            if (id) await pb.collection('media').update(id, data);
-            else await pb.collection('media').create(data);
+            if (id) {
+                await pb.collection('media').update(id, data);
+            } else {
+                await pb.collection('media').create(data);
+            }
             
-            msgEl.textContent = "Success!"; msgEl.style.display = 'block';
+            msgEl.textContent = "Success! Movie saved correctly.";
+            msgEl.className = "message success";
+            msgEl.style.display = 'block';
             setTimeout(() => window.location.href='all-content.html', 1500);
         } catch (err) {
-            msgEl.textContent = err.message; msgEl.style.display = 'block';
+            msgEl.textContent = `Error: ${err.message}`;
+            msgEl.className = "message error";
+            msgEl.style.display = 'block';
             saveBtn.disabled = false;
+            saveBtn.innerText = id ? "Update Movie" : "Save to Database";
         }
     });
-    document.getElementById('cancelBtn').addEventListener('click', () => window.location.href='all-content.html');
+
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+        // More robust cancel, checks if it's an edit or a new add
+        const id = document.getElementById('recordId').value;
+        if(id) {
+            window.location.href='all-content.html';
+        } else {
+            detailsView.style.display = 'none';
+            searchView.style.display = 'block';
+            document.getElementById('movieForm').reset();
+        }
+    });
 </script>
 </body>
 </html>

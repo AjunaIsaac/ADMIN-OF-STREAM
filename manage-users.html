@@ -3,47 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Management - Admin Panel</title>
+    <title>User Management - Admin</title>
+    <link rel="stylesheet" href="assets/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        .subscription-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .sub-button {
+            padding: 8px 12px;
+            font-size: 0.9em;
+            background-color: #33395b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .sub-button:hover {
+            background-color: var(--accent-color);
+            color: var(--primary-bg);
+        }
+    </style>
 </head>
 <body>
-    <div id="adminPanel">
-       <nav id="mainMenu">
-            <div class="menu-header">Admin Menu</div>
-            <a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-            <hr style="border-color: #333; margin: 10px 0;">
-            <a href="manage-movies.html"><i class="fas fa-film"></i> Manage Movies</a>
-            <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
-            <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
-            <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
-            <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
-            <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
-        </nav>
-        <div class="main-content">
-            <div class="admin-header">
-                <h1>User Management</h1>
-                <button class="logout-btn" id="logoutBtn">Logout</button>
-            </div>
-            <div class="page-container" style="display: block;">
-                <h2>User Management Panel</h2>
-                <div class="form-group">
-                    <label for="user-search-email">Search User by Email</label>
-                    <input type="email" id="user-search-email" placeholder="user@example.com" />
-                </div>
-                <button id="user-search-btn">Search User</button>
-                <div id="user-message-area" class="message" style="display: none;"></div>
-                <hr id="user-form-divider" style="border-color: #444; margin: 20px 0; display: none;" />
-                <div id="user-edit-form-section" style="display: none;">
-                    <h3 id="user-form-title">Edit User</h3>
-                    
-                    <div class="status-badge-container">
-                        Current Status: <span id="user-status-display"></span>
-                    </div>
+    <div id="adminPanel" style="display: none; width: 100%;">
+        <button id="menuToggleBtn"><i class="fas fa-bars"></i></button>
 
-                    <div class="form-group"><label>Document ID (User UID)</label><input type="text" id="user-doc-id" readonly /></div>
+        <nav id="mainMenu">
+            <div class="menu-header">Admin Menu</div>
+            <a class="menu-link" href="add_from_tmdb.html"><i class="fas fa-magic"></i> Add from TMDB</a>
+            <a class="menu-link" href="manual_add.html"><i class="fas fa-edit"></i> Manual Add</a>
+            <a class="menu-link" href="manage_content.html"><i class="fas fa-search"></i> Search & Edit/Delete</a>
+            <a class="menu-link" href="all_content.html"><i class="fas fa-film"></i> All Content</a>
+             <a class="menu-link" href="new  notification.html"><i class="fas fa-edit"></i>Push Notification</a>
+            <a class="menu-link" href="add_tv_channel.html"><i class="fas fa-tv"></i> Add Live TV Channel</a>
+            <a class="menu-link" href="banners.html"><i class="fas fa-images"></i> Manage Banners</a>
+            <a class="menu-link" href="notifications.html"><i class="fas fa-paper-plane"></i> Send Notifications</a>
+            <a class="menu-link" href="user_management.html"><i class="fas fa-users-cog"></i> User Management</a>
+            <a href="https://storage1.streamzonemovies.online" target="_blank"><i class="fas fa-server"></i> My Server</a>
+        </nav>
+
+        <div class="main-content" id="mainContentArea">
+            <div class="admin-header">
+                <h1 id="pageTitle">User Management Panel</h1>
+                <span id="adminEmailDisplay"></span>
+                <button class="logout-btn" id="logoutBtn">Logout <i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            
+            <div class="page-container" style="display: block;">
+                <div class="form-group">
+                    <label for="user-search-input">Search User by Email, Name, or Phone</label>
+                    <input type="text" id="user-search-input" placeholder="e.g., user@example.com, Rafael, or 649386864" />
+                </div>
+                <button id="user-search-btn">Search User<span class="spinner"></span></button>
+
+                <div id="user-message-area" class="message" style="display:none;"></div>
+                <hr id="user-form-divider" style="display:none;" />
+
+                <div id="user-edit-form-section" style="display:none;">
+                    <h3 id="user-form-title">Edit User</h3>
+                    <div class="form-group"><label for="user-doc-id">Document ID (User UID)</label><input type="text" id="user-doc-id" readonly /></div>
                     <div class="form-group"><label for="user-edit-name">Full Name</label><input type="text" id="user-edit-name" /></div>
                     <div class="form-group"><label for="user-edit-email">Email</label><input type="email" id="user-edit-email" /></div>
+                    <div class="form-group"><label for="user-edit-phone">Phone Number</label><input type="text" id="user-edit-phone" /></div>
                     <div class="form-group"><label for="user-edit-activated">Account Activated</label><select id="user-edit-activated"><option value="true">True</option><option value="false">False</option></select></div>
                     
                     <div class="form-group">
@@ -61,196 +86,265 @@
 
                     <div class="form-group"><label for="user-edit-expiresAt">Subscription Expiration (or set manually)</label><input type="datetime-local" id="user-edit-expiresAt" /></div>
                     
-                    <button id="user-update-btn">Update Document</button>
-                    <button id="user-create-btn" style="display: none;">Create New Document</button>
+                    <div id="user-status-info" style="display:none; margin-top: 20px; margin-bottom: 20px; padding: 15px; background-color: var(--primary-bg); border-radius: 8px; border: 1px solid #444;"></div>
+
+                    <button id="user-update-btn">Update Document<span class="spinner"></span></button>
+                    <button id="user-create-btn" style="display:none;">Create New Document<span class="spinner"></span></button>
                 </div>
             </div>
         </div>
     </div>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const firebaseConfig = { apiKey: "AIzaSyCgbaRR6ezvswehl1Q21ICHgBtXZ9bcLwA", authDomain: "my-movies-admin.firebaseapp.com", projectId: "my-movies-admin", storageBucket: "my-movies-admin.firebasestorage.app", messagingSenderId: "492775126123", appId: "1:492775126123:web:7ad51095ff15f61ed12d2e" };
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore(app);
-    const auth = firebase.auth(app);
-
-    const setLoading = (btn, isLoading) => { if(btn) { btn.classList.toggle('loading', isLoading); btn.disabled = isLoading; }};
-    const displayMessage = (el, msg, type) => { if(el) { el.textContent = msg; el.className = `message ${type}`; el.style.display = 'block'; }};
-
-    const userSearchEmailInput = document.getElementById('user-search-email');
-    const userSearchBtn = document.getElementById('user-search-btn');
-    const userMessageArea = document.getElementById('user-message-area');
-    const userEditFormSection = document.getElementById('user-edit-form-section');
-    const userFormDivider = document.getElementById('user-form-divider');
-    const userDocIdInput = document.getElementById('user-doc-id');
-    const userEditNameInput = document.getElementById('user-edit-name');
-    const userEditEmailInput = document.getElementById('user-edit-email');
-    const userEditActivatedSelect = document.getElementById('user-edit-activated');
-    const userEditExpiresAtInput = document.getElementById('user-edit-expiresAt');
-    const userUpdateBtn = document.getElementById('user-update-btn');
-    const userCreateBtn = document.getElementById('user-create-btn');
-    const userFormTitle = document.getElementById('user-form-title');
-    const userStatusDisplay = document.getElementById('user-status-display');
-    const subscriptionButtonsContainer = document.getElementById('subscription-buttons-container');
-
-    auth.onAuthStateChanged(user => {
-        if (!user) window.location.href = 'index.html';
-    });
-    document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
     
-    function clearUserForm() {
-        userDocIdInput.value = '';
-        userEditNameInput.value = '';
-        userEditEmailInput.value = '';
-        userEditActivatedSelect.value = 'true';
-        userEditExpiresAtInput.value = '';
-        userStatusDisplay.innerHTML = '';
-        userEditFormSection.style.display = 'none';
-        userFormDivider.style.display = 'none';
-        userMessageArea.style.display = 'none';
-    }
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-check-compat.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 1. FIREBASE INITIALIZATION ---
+             const firebaseConfig = {
+                apiKey: "AIzaSyAuhAOtwhENHLAxwl8jtwafxFx3M2TWxDk",
+                authDomain: "stream-zone-movies1.firebaseapp.com",
+                projectId: "stream-zone-movies1",
+                storageBucket: "stream-zone-movies1.firebasestorage.app",
+                messagingSenderId: "319851420625",
+                appId: "1:319851420625:web:73fa1d0302de6755295ef0",
+                measurementId: "G-W139021D8L"
+            };
 
-    function formatForInput(date) {
-        if (!date) return '';
-        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-        return localDate.toISOString().slice(0, 16);
-    }
+            let db, auth;
+            try {
+                const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.app();
 
-    function displayUserStatus(expiresAtTimestamp) {
-        if (!expiresAtTimestamp || typeof expiresAtTimestamp.toDate !== 'function') {
-            userStatusDisplay.innerHTML = `<span class="status-badge" style="background-color: var(--info-color); color: white;">Never Subscribed</span>`;
-            return;
-        }
-        const expiresDate = expiresAtTimestamp.toDate();
-        const now = new Date();
-        if (expiresDate > now) {
-            userStatusDisplay.innerHTML = `<span class="status-badge" style="background-color: var(--success-color); color: white;">Active</span> (Expires: ${expiresDate.toLocaleString()})`;
-        } else {
-            userStatusDisplay.innerHTML = `<span class="status-badge" style="background-color: var(--danger-color); color: white;">Expired</span> (Expired on: ${expiresDate.toLocaleString()})`;
-        }
-    }
+                // ✅ [RESTORED] Firebase App Check initialization
+                const appCheck = firebase.appCheck(app);
+                appCheck.activate(
+                    '6LfFvcUrAAAAAH6JzBwpbxJqzHTJ8qA_rzSe5OMP',
+                    true
+                );
 
-    userSearchBtn.addEventListener('click', async () => {
-        const emailToSearch = userSearchEmailInput.value.trim();
-        if (!emailToSearch) return;
-        setLoading(userSearchBtn, true);
-        try {
-            const q = db.collection("users").where("email", "==", emailToSearch);
-            const querySnapshot = await q.get();
-            if (querySnapshot.empty) {
-                displayMessage(userMessageArea, `No user found. You can create a new document for this email.`, 'info');
+                db = firebase.firestore(app);
+                auth = firebase.auth(app);
+            } catch (error) {
+                console.error("Critical error initializing Firebase:", error);
+                document.body.innerHTML = "<h1>Error: Application could not start.</h1>";
+                return;
+            }
+
+            // --- 2. CORE AUTH & UI LOGIC ---
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                     // Check for admin status
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    if (!userDoc.exists || userDoc.data().isAdmin !== true) {
+                        await auth.signOut(); // Force sign out if not admin
+                        window.location.href = 'login.html';
+                    } else {
+                        document.getElementById('adminPanel').style.display = 'flex';
+                        document.getElementById('adminEmailDisplay').textContent = `Logged in as: ${user.email}`;
+                    }
+                } else {
+                    window.location.href = 'login.html';
+                }
+            });
+            document.getElementById('logoutBtn')?.addEventListener('click', () => { auth.signOut(); });
+            document.getElementById('menuToggleBtn')?.addEventListener('click', () => { 
+                document.getElementById('mainMenu')?.classList.toggle('open'); 
+            });
+
+            // --- 3. HELPER FUNCTIONS ---
+            function setLoading(button, isLoading) {
+                if (button) {
+                    button.classList.toggle('loading', isLoading);
+                    button.disabled = isLoading;
+                }
+            }
+            function displayMessage(element, msg, type) {
+                if (element) {
+                    element.textContent = msg;
+                    element.className = `message ${type}`;
+                    element.style.display = 'block';
+                }
+            }
+            
+            // --- 4. PAGE-SPECIFIC CODE ---
+            const userSearchInput = document.getElementById('user-search-input'); 
+            const userSearchBtn = document.getElementById('user-search-btn');
+            const userMessageArea = document.getElementById('user-message-area');
+            const userEditFormSection = document.getElementById('user-edit-form-section');
+            const userFormDivider = document.getElementById('user-form-divider');
+            const userDocIdInput = document.getElementById('user-doc-id');
+            const userEditNameInput = document.getElementById('user-edit-name');
+            const userEditEmailInput = document.getElementById('user-edit-email');
+            const userEditPhoneInput = document.getElementById('user-edit-phone');
+            const userEditActivatedSelect = document.getElementById('user-edit-activated');
+            const userEditExpiresAtInput = document.getElementById('user-edit-expiresAt');
+            const userUpdateBtn = document.getElementById('user-update-btn');
+            const userCreateBtn = document.getElementById('user-create-btn');
+            const userStatusInfo = document.getElementById('user-status-info');
+            const subscriptionButtonsContainer = document.getElementById('subscription-buttons-container');
+
+            function formatTimestampForInput(timestamp) {
+                if (!timestamp || typeof timestamp.toDate !== 'function') return '';
+                return formatDateForInput(timestamp.toDate());
+            }
+
+            function formatDateForInput(date) {
+                if (!date) return '';
+                const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+                return localDate.toISOString().slice(0, 16);
+            }
+            
+            function displayUserStatus(userData) {
+                if (!userStatusInfo) return;
+                let statusHTML = '<h4 style="margin-top:0; margin-bottom: 10px;">Subscription Status</h4>';
+                const expiresAt = userData.expiresAt;
+                if (expiresAt && typeof expiresAt.toDate === 'function') {
+                    const expiryDate = expiresAt.toDate();
+                    const now = new Date();
+                    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                    const formattedDate = expiryDate.toLocaleString('en-US', options);
+                    if (expiryDate < now) {
+                        statusHTML += `<p style="color: var(--danger-color); margin:0;">Status: Expired on ${formattedDate}</p>`;
+                    } else {
+                        statusHTML += `<p style="color: var(--success-color); margin:0;">Status: Active, expires on ${formattedDate}</p>`;
+                    }
+                } else {
+                    statusHTML += '<p style="margin:0;">Status: No subscription.</p>';
+                }
+                userStatusInfo.innerHTML = statusHTML;
+                userStatusInfo.style.display = 'block';
+            }
+
+            function clearUserForm() {
+                userDocIdInput.value = '';
+                userEditNameInput.value = '';
+                userEditEmailInput.value = '';
+                userEditPhoneInput.value = '';
+                userEditActivatedSelect.value = 'true';
+                userEditExpiresAtInput.value = '';
+                userEditFormSection.style.display = 'none';
+                userFormDivider.style.display = 'none';
+                if (userStatusInfo) userStatusInfo.style.display = 'none';
+            }
+
+            userSearchBtn.addEventListener('click', async () => {
+                const searchTerm = userSearchInput.value.trim();
+                if (!searchTerm) return;
                 clearUserForm();
-                userEditEmailInput.value = emailToSearch;
-                userFormTitle.textContent = "Create New User Document";
-                userDocIdInput.value = "Will be auto-generated";
-                userUpdateBtn.style.display = 'none';
-                userCreateBtn.style.display = 'block';
-            } else {
-                const userDoc = querySnapshot.docs[0];
-                const userData = userDoc.data();
-                displayMessage(userMessageArea, 'User found.', 'success');
-                userDocIdInput.value = userDoc.id;
-                userEditNameInput.value = userData.name || '';
-                userEditEmailInput.value = userData.email || '';
-                userEditActivatedSelect.value = userData.activated ? 'true' : 'false';
-                userEditExpiresAtInput.value = userData.expiresAt ? formatForInput(userData.expiresAt.toDate()) : '';
-                displayUserStatus(userData.expiresAt);
-                userFormTitle.textContent = "Edit User Document";
-                userCreateBtn.style.display = 'none';
-                userUpdateBtn.style.display = 'block';
-            }
-            userEditFormSection.style.display = 'block';
-            userFormDivider.style.display = 'block';
-        } catch (error) {
-            displayMessage(userMessageArea, `Error searching: ${error.message}`, 'error');
-        } finally {
-            setLoading(userSearchBtn, false);
-        }
-    });
+                setLoading(userSearchBtn, true);
+                try {
+                    const queries = [
+                        db.collection("users").where("email", "==", searchTerm).get(),
+                        db.collection("users").where("name", "==", searchTerm).get(),
+                        db.collection("users").where("phone", "==", searchTerm).get()
+                    ];
+                    const resultsSnapshots = await Promise.all(queries);
+                    const results = new Map();
+                    resultsSnapshots.forEach(snapshot => {
+                        snapshot.forEach(doc => results.set(doc.id, { id: doc.id, ...doc.data() }));
+                    });
 
-    subscriptionButtonsContainer.addEventListener('click', (e) => {
-        const button = e.target.closest('.sub-button');
-        if (!button) return;
-
-        const duration = parseInt(button.dataset.duration);
-        const unit = button.dataset.unit;
-
-        const now = new Date();
-        let startDate = now;
-        
-        // If there's an existing, valid expiration date, use it as the start date
-        const existingExpiryValue = userEditExpiresAtInput.value;
-        if (existingExpiryValue) {
-            const existingExpiryDate = new Date(existingExpiryValue);
-            // If the existing subscription is still active, extend it. Otherwise, start from now.
-            if (existingExpiryDate > now) {
-                startDate = existingExpiryDate;
-            }
-        }
-        
-        const newDate = new Date(startDate);
-
-        switch (unit) {
-            case 'day': newDate.setDate(newDate.getDate() + duration); break;
-            case 'week': newDate.setDate(newDate.getDate() + (duration * 7)); break;
-            case 'month': newDate.setMonth(newDate.getMonth() + duration); break;
-            case 'year': newDate.setFullYear(newDate.getFullYear() + duration); break;
-        }
-
-        userEditExpiresAtInput.value = formatForInput(newDate);
-    });
-
-    userUpdateBtn.addEventListener('click', async () => {
-        const userId = userDocIdInput.value;
-        if (!userId) return;
-        setLoading(userUpdateBtn, true);
-        try {
-            const dateValue = userEditExpiresAtInput.value ? new Date(userEditExpiresAtInput.value) : null;
-            await db.collection("users").doc(userId).update({
-                name: userEditNameInput.value,
-                email: userEditEmailInput.value,
-                activated: userEditActivatedSelect.value === 'true',
-                expiresAt: dateValue ? firebase.firestore.Timestamp.fromDate(dateValue) : null
+                    if (results.size === 0) {
+                        displayMessage(userMessageArea, 'No user found. You can create a new document.', 'info');
+                        userEditEmailInput.value = searchTerm.includes('@') ? searchTerm : '';
+                        userEditNameInput.value = !searchTerm.includes('@') && !/^\d+$/.test(searchTerm) ? searchTerm : '';
+                        userEditPhoneInput.value = /^\d+$/.test(searchTerm) ? searchTerm : '';
+                        userUpdateBtn.style.display = 'none';
+                        userCreateBtn.style.display = 'block';
+                    } else {
+                        const [firstId, firstData] = results.entries().next().value;
+                        userDocIdInput.value = firstId;
+                        userEditNameInput.value = firstData.name || '';
+                        userEditEmailInput.value = firstData.email || '';
+                        userEditPhoneInput.value = firstData.phone || '';
+                        userEditActivatedSelect.value = firstData.activated ? 'true' : 'false';
+                        userEditExpiresAtInput.value = formatTimestampForInput(firstData.expiresAt);
+                        userCreateBtn.style.display = 'none';
+                        userUpdateBtn.style.display = 'block';
+                        displayUserStatus(firstData);
+                    }
+                    userEditFormSection.style.display = 'block';
+                    userFormDivider.style.display = 'block';
+                } catch (error) {
+                    displayMessage(userMessageArea, `Error: ${error.message}`, 'error');
+                } finally {
+                    setLoading(userSearchBtn, false);
+                }
             });
-            displayMessage(userMessageArea, 'User document updated!', 'success');
-            // Refresh status after update
-            displayUserStatus(dateValue ? firebase.firestore.Timestamp.fromDate(dateValue) : null);
-        } catch (error) {
-            displayMessage(userMessageArea, `Update failed: ${error.message}`, 'error');
-        } finally {
-            setLoading(userUpdateBtn, false);
-        }
-    });
 
-    userCreateBtn.addEventListener('click', async () => {
-        const email = userEditEmailInput.value.trim();
-        if (!email) return;
-        setLoading(userCreateBtn, true);
-        try {
-            const newDocRef = db.collection("users").doc();
-            const dateValue = userEditExpiresAtInput.value ? new Date(userEditExpiresAtInput.value) : null;
-            await newDocRef.set({
-                name: userEditNameInput.value, email: email,
-                activated: userEditActivatedSelect.value === 'true',
-                expiresAt: dateValue ? firebase.firestore.Timestamp.fromDate(dateValue) : null,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            subscriptionButtonsContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.sub-button');
+                if (!button) return;
+                const duration = parseInt(button.dataset.duration);
+                const unit = button.dataset.unit;
+                const now = new Date();
+                let startDate = now;
+                const existingExpiryValue = userEditExpiresAtInput.value;
+                if (existingExpiryValue) {
+                    const existingExpiryDate = new Date(existingExpiryValue);
+                    if (existingExpiryDate > now) {
+                        startDate = existingExpiryDate;
+                    }
+                }
+                const newDate = new Date(startDate);
+                switch (unit) {
+                    case 'day': newDate.setDate(newDate.getDate() + duration); break;
+                    case 'week': newDate.setDate(newDate.getDate() + (duration * 7)); break;
+                    case 'month': newDate.setMonth(newDate.getMonth() + duration); break;
+                    case 'year': newDate.setFullYear(newDate.getFullYear() + duration); break;
+                }
+                userEditExpiresAtInput.value = formatDateForInput(newDate);
             });
-            userDocIdInput.value = newDocRef.id;
-            displayMessage(userMessageArea, `New document created: ${newDocRef.id}`, 'success');
-            displayUserStatus(dateValue ? firebase.firestore.Timestamp.fromDate(dateValue) : null);
-            userCreateBtn.style.display = 'none';
-            userUpdateBtn.style.display = 'block';
-            userFormTitle.textContent = 'Edit User Document';
-        } catch (error) {
-            displayMessage(userMessageArea, `Creation failed: ${error.message}`, 'error');
-        } finally {
-            setLoading(userCreateBtn, false);
-        }
-    });
-});
-</script>
+
+            userUpdateBtn.addEventListener('click', async () => {
+                const userId = userDocIdInput.value;
+                if (!userId) { return; }
+                setLoading(userUpdateBtn, true);
+                try {
+                    const dateValue = userEditExpiresAtInput.value ? new Date(userEditExpiresAtInput.value) : null;
+                    const payload = {
+                        name: userEditNameInput.value, email: userEditEmailInput.value, phone: userEditPhoneInput.value,
+                        activated: userEditActivatedSelect.value === 'true',
+                        expiresAt: dateValue ? firebase.firestore.Timestamp.fromDate(dateValue) : firebase.firestore.FieldValue.delete(),
+                    };
+                    await db.collection("users").doc(userId).update(payload);
+                    displayMessage(userMessageArea, 'User document updated successfully!', 'success');
+                    displayUserStatus({ ...payload, expiresAt: dateValue ? firebase.firestore.Timestamp.fromDate(dateValue) : null });
+                } catch (error) {
+                    displayMessage(userMessageArea, `Update failed: ${error.message}`, 'error');
+                } finally {
+                    setLoading(userUpdateBtn, false);
+                }
+            });
+
+            userCreateBtn.addEventListener('click', async () => {
+                const email = userEditEmailInput.value.trim();
+                const name = userEditNameInput.value.trim();
+                if (!email || !name) { return; }
+                setLoading(userCreateBtn, true);
+                try {
+                    const dateValue = userEditExpiresAtInput.value ? new Date(userEditExpiresAtInput.value) : null;
+                    const newDocRef = db.collection("users").doc();
+                    await newDocRef.set({
+                        name: name, email: email, phone: userEditPhoneInput.value.trim(),
+                        activated: userEditActivatedSelect.value === 'true',
+                        expiresAt: dateValue ? firebase.firestore.Timestamp.fromDate(dateValue) : null,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    userDocIdInput.value = newDocRef.id;
+                    displayMessage(userMessageArea, `New user document created: ${newDocRef.id}`, 'success');
+                    userCreateBtn.style.display = 'none';
+                    userUpdateBtn.style.display = 'block';
+                    displayUserStatus({ expiresAt: dateValue ? firebase.firestore.Timestamp.fromDate(dateValue) : null });
+                } catch (error) {
+                    displayMessage(userMessageArea, `Creation failed: ${error.message}`, 'error');
+                } finally {
+                    setLoading(userCreateBtn, false);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
