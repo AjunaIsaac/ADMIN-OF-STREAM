@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Series - Admin Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- PocketBase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
     <style>
         :root {
             --primary-bg: #0A0F2A; --card-bg: #1C2141; --accent-color: #DFFF00;
             --text-primary: #FFFFFF; --text-secondary: #a9a9b3; --input-bg: #0A0F2A;
-            --success-color: #27ae60; --danger-color: #f44336; --info-color: #2196F3;
+            --success-color: #27ae60; --danger-color: #f44336;
         }
         body { background-color: var(--primary-bg); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; display: flex; min-height: 100vh; }
         
@@ -21,31 +20,25 @@
         
         .main-content { flex-grow: 1; padding: 2rem; overflow-y: auto; }
         
-        /* Views */
         #searchView, #detailsView { background-color: var(--card-bg); padding: 2rem; border-radius: 15px; max-width: 1000px; margin: 0 auto; }
         
         h2 { color: var(--accent-color); margin-top: 0; }
         
         .form-group { margin-bottom: 1.5rem; }
         label { display: block; margin-bottom: 8px; color: var(--text-secondary); }
-        input[type="text"], input[type="url"], input[type="number"] { width: 100%; background-color: var(--input-bg); border: 1px solid #33395b; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; }
+        input[type="text"] { width: 100%; background-color: var(--input-bg); border: 1px solid #33395b; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; }
         
         .btn { padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; }
         .btn-primary { background: linear-gradient(90deg, #FF416C, #FFDE00); width: 100%; }
         .btn-secondary { background: #33395b; }
-        .btn-success { background: var(--success-color); }
         
-        /* Episode Table */
-        .episode-table-wrapper { overflow-x: auto; margin-top: 20px; border: 1px solid #33395b; border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th, td { padding: 12px; border-bottom: 1px solid #33395b; text-align: left; vertical-align: middle; }
-        th { background-color: #0e1229; color: var(--accent-color); }
-        tr.season-header { background-color: #161b33; font-weight: bold; color: var(--accent-color); text-align: center; }
-        td input { padding: 8px; border-radius: 4px; border: 1px solid #444; width: 100%; }
-        
-        .thumbnail-preview { width: 80px; height: 45px; object-fit: cover; border-radius: 4px; background: #000; vertical-align: middle; margin-right: 10px; }
-        
-        /* Checkboxes */
+        #episodesJsonInput {
+            width: 100%; height: 300px; background-color: #000; color: #00ff00;
+            border: 1px solid #33395b; border-radius: 8px; padding: 15px;
+            font-family: 'Courier New', Courier, monospace; font-size: 0.9rem;
+            box-sizing: border-box; resize: vertical;
+        }
+
         .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; background: var(--input-bg); padding: 10px; border-radius: 8px; max-height: 150px; overflow-y: auto; }
         .checkbox-label { background: #161b33; padding: 5px 10px; border-radius: 4px; border: 1px solid #33395b; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .checkbox-label input { width: auto; margin: 0; }
@@ -58,37 +51,38 @@
         .series-card { background: var(--primary-bg); border-radius: 8px; cursor: pointer; overflow: hidden; border: 1px solid #333; text-align: center; }
         .series-card img { width: 100%; height: 300px; object-fit: cover; }
         .series-card h3 { padding: 10px; font-size: 0.9rem; margin: 0; }
+
+        details { background: #111533; border-radius: 8px; padding: 10px; margin-bottom: 1rem; }
+        summary { cursor: pointer; font-weight: bold; color: var(--accent-color); }
+        pre { background: #000; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; color: #eee; }
     </style>
 </head>
 <body>
 
    <nav id="mainMenu">
-            <div class="menu-header">Admin Menu</div>
-            <a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-            <hr style="border-color: #333; margin: 10px 0;">
-            <a href="manage-movies.html"><i class="fas fa-film"></i> Manage Movies</a>
-            <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
-            <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
-            <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
-            <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
-            <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
-        </nav>
+        <a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <hr style="border-color: #333; margin: 10px 0;">
+        <a href="manage-movies.html"><i class="fas fa-film"></i> Manage Movies</a>
+        <a href="manage-series.html" class="active"><i class="fas fa-tv"></i> Manage Series</a>
+        <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
+        <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
+        <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
+        <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
+    </nav>
 
     <div class="main-content">
         
-        <!-- SEARCH VIEW -->
         <div id="searchView">
             <h2>Search TMDB for Series</h2>
             <div class="form-group">
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="seriesSearchQuery" placeholder="e.g. Breaking Bad">
+                    <input type="text" id="seriesSearchQuery" placeholder="e.g., The Last of Us">
                     <button id="searchTmdbBtn" class="btn btn-secondary">Search</button>
                 </div>
             </div>
             <div id="searchResultsContainer"></div>
         </div>
 
-        <!-- DETAILS VIEW -->
         <div id="detailsView" style="display: none;">
             <div style="display: flex; gap: 20px; margin-bottom: 20px;">
                 <img id="seriesPoster" src="" style="width: 120px; border-radius: 8px;">
@@ -100,112 +94,86 @@
 
             <form id="seriesForm">
                 <input type="hidden" id="recordId">
-                <input type="hidden" id="tmdbId">
+                <input type="hidden" id="tmdb_id">
                 <input type="hidden" id="posterUrl">
                 <input type="hidden" id="backdropUrl">
-                <input type="hidden" id="firstAirDate">
 
                 <div class="form-group">
-                    <label>VJ Name (Required)</label>
+                    <label>VJ Name</label>
                     <div id="vjContainer" class="checkbox-group"></div>
                 </div>
 
                 <div class="form-group">
-                    <label>Genres</label>
-                    <div id="genreContainer" class="checkbox-group"></div>
+                    <label>Tags & Genres</label>
+                    <div id="tagsContainer" class="checkbox-group"></div>
                 </div>
 
-                <h3>Episodes Manager</h3>
-                <div class="episode-table-wrapper">
-                    <table id="episodesTable">
-                        <thead>
-                            <tr>
-                                <th style="width: 50px;">Ep</th>
-                                <th>Details</th>
-                                <th>Video Link (Required)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="episodesTableBody">
-                            <!-- Rows injected via JS -->
-                        </tbody>
-                    </table>
+                <div class="form-group">
+                    <label for="episodesJsonInput">Episodes JSON</label>
+                    <details>
+                        <summary>Click for JSON Example</summary>
+                        <pre id="jsonExample"></pre>
+                    </details>
+                    <textarea id="episodesJsonInput" placeholder="This will be auto-filled from TMDB. You just need to add the 'url' for each episode."></textarea>
                 </div>
 
                 <div style="display: flex; gap: 15px; margin-top: 20px;">
                     <button type="submit" class="btn btn-primary" id="saveBtn">Save Series</button>
-                    <button type="button" class="btn btn-secondary" onclick="location.reload()">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='all-content.html'">Cancel</button>
                 </div>
             </form>
-            <div id="formMessage" class="message"></div>
+            <div id="formMessage" class="message" style="display: none;"></div>
         </div>
 
     </div>
 <script>
-    const pb = new PocketBase('https://db.jmovies.site');
-    pb.autoCancellation(false);
+    const pb = new PocketBase('https://db.streamzonemovies.online');
     const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5";
 
     const VJ_LIST = ["VJ JUNIOR", "VJ TONNY", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
-    const GENRE_LIST = ["ACTION", "HORROR", "ADVENTURE", "LOVE STORY", "COMEDY", "CRIME", "FAMILY", "SCI FI", "ROMANCE", "KUNGU FU", "DRAMA", "SPORT", "THRILLER", "ANIMATION", "DOCUMENTARY", "FANTASY", "HISTORY", "MYSTERY", "WAR"];
-    
-    // ✅ NEW: Special Categories for Series
-    const SPECIAL_CATEGORIES = [
-        { label: "Trending This Week", value: "trending" },
-        { label: "Western Series", value: "western_series" },
-        { label: "K-Dramas", value: "k_dramas" },
-        { label: "Latest on Jmovies", value: "latest_on_jmovies" }
-    ];
+    const TAGS_LIST = ["latest_uploads","Latest-TV-Series", "recent_tv_shows", "western_series", "k_dramas", "indian", "horror", "action-thriller", "animation", "scifi-fantasy", "adventure", "high-school", "comedy", "most_liked", "upcoming_shows", "ACTION", "HORROR", "ADVENTURE", "LOVE STORY", "COMEDY", "CRIME", "FAMILY", "SCI FI", "ROMANCE", "KUNGU FU", "DRAMA", "SPORT", "THRILLER", "ANIMATION", "DOCUMENTARY", "FANTASY", "HISTORY", "MYSTERY", "WAR"];
 
     const searchView = document.getElementById('searchView');
     const detailsView = document.getElementById('detailsView');
     const searchResults = document.getElementById('searchResultsContainer');
-    const episodesBody = document.getElementById('episodesTableBody');
     const msgEl = document.getElementById('formMessage');
     const saveBtn = document.getElementById('saveBtn');
-
-    function createCheckboxes(list, containerId, name, isObject=false) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        container.innerHTML = '';
-        list.forEach(item => {
-            const label = document.createElement('label');
-            label.className = 'checkbox-label';
-            const value = isObject ? item.value : item;
-            const text = isObject ? item.label : item;
-            label.innerHTML = `<input type="checkbox" name="${name}" value="${value}"> ${text}`;
-            container.appendChild(label);
-        });
-    }
+    const episodesJsonInput = document.getElementById('episodesJsonInput');
 
     document.addEventListener('DOMContentLoaded', () => {
         createCheckboxes(VJ_LIST, 'vjContainer', 'vjs');
-        createCheckboxes(GENRE_LIST, 'genreContainer', 'genres');
-        
-        // ✅ Inject Special Categories
-        let catContainer = document.getElementById('categoryContainer');
-        if (!catContainer) {
-            const formGroup = document.createElement('div');
-            formGroup.className = 'form-group';
-            formGroup.innerHTML = `<label>Special Categories</label><div id="categoryContainer" class="checkbox-group"></div>`;
-            document.getElementById('genreContainer').parentElement.after(formGroup);
-            catContainer = document.getElementById('categoryContainer');
-        }
-        createCheckboxes(SPECIAL_CATEGORIES, 'categoryContainer', 'type', true);
+        createCheckboxes(TAGS_LIST, 'tagsContainer', 'tags');
+
+        // ✅ CHANGED: Example now uses 'url' to match the app's requirement
+        const example = [{ season: 1, episode: 1, title: "Episode Title From TMDB", url: "YOUR_VIDEO_URL_HERE" }];
+        document.getElementById('jsonExample').textContent = JSON.stringify(example, null, 2);
 
         const urlParams = new URLSearchParams(window.location.search);
         const editId = urlParams.get('id');
         if (editId) loadSeriesForEditing(editId);
     });
 
+    function createCheckboxes(list, containerId, name) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        list.sort().forEach(item => {
+            const label = document.createElement('label');
+            label.className = 'checkbox-label';
+            const displayText = item.replace(/_/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            label.innerHTML = `<input type="checkbox" name="${name}" value="${item}"> ${displayText}`;
+            container.appendChild(label);
+        });
+    }
+
     document.getElementById('searchTmdbBtn').addEventListener('click', async () => {
         const query = document.getElementById('seriesSearchQuery').value;
         if (!query) return;
-        searchResults.innerHTML = '<p style="color:white">Searching...</p>';
+        searchResults.innerHTML = '<p>Searching...</p>';
         try {
             const res = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`);
             const data = await res.json();
             searchResults.innerHTML = '';
-            if (!data.results?.length) { searchResults.innerHTML = '<p>No results.</p>'; return; }
+            if (!data.results?.length) { searchResults.innerHTML = '<p>No results found.</p>'; return; }
             data.results.forEach(series => {
                 const card = document.createElement('div');
                 card.className = 'series-card';
@@ -216,10 +184,9 @@
         } catch (e) { alert(e.message); }
     });
 
-    async function loadTmdbDetails(tmdbId, existingData = null) {
-        if (!tmdbId) { alert("Missing TMDB ID"); return; }
+    async function loadTmdbDetails(tmdbId, existingRecord = null) {
         searchView.style.display = 'none'; detailsView.style.display = 'block';
-        episodesBody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
+        episodesJsonInput.value = 'Fetching episodes from TMDB...';
 
         try {
             const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}`);
@@ -228,96 +195,129 @@
             document.getElementById('seriesTitle').textContent = data.name;
             document.getElementById('seriesOverview').textContent = data.overview;
             document.getElementById('seriesPoster').src = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
-            document.getElementById('tmdbId').value = String(data.id);
+            document.getElementById('tmdb_id').value = String(data.id);
             document.getElementById('posterUrl').value = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
             document.getElementById('backdropUrl').value = data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : '';
-            document.getElementById('firstAirDate').value = data.first_air_date || '';
 
-            // Auto-Genres
-            if (data.genres && !existingData) {
-                document.querySelectorAll('input[name="genres"]').forEach(cb => cb.checked = false);
+            if (data.genres && !existingRecord) {
+                document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
                 data.genres.forEach(g => {
-                    const tmdbG = g.name.toUpperCase();
-                    document.querySelectorAll('input[name="genres"]').forEach(cb => {
-                        const myG = cb.value.toUpperCase();
-                        if (tmdbG.includes(myG) || (tmdbG.includes("SCI") && myG === "SCI FI")) cb.checked = true;
+                    const tmdbGenre = g.name.toUpperCase();
+                    const matchingTag = TAGS_LIST.find(tag => tag.toUpperCase() === tmdbGenre || (tmdbGenre === 'SCI-FI & FANTASY' && tag === 'SCI FI'));
+                    if(matchingTag) document.querySelector(`input[name="tags"][value="${matchingTag}"]`).checked = true;
+                });
+            }
+
+            const episodePromises = data.seasons
+                .filter(s => s.season_number > 0 && s.episode_count > 0)
+                .map(s => fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${s.season_number}?api_key=${TMDB_API_KEY}`).then(res => res.json()));
+            
+            const seasonsData = await Promise.all(episodePromises);
+            
+            let episodesForJson = [];
+            seasonsData.forEach(seasonData => {
+                seasonData.episodes.forEach(ep => {
+                    let video_url = "";
+                    if (existingRecord && existingRecord.episodes) {
+                        const savedEp = existingRecord.episodes.find(e => e.season === ep.season_number && e.episode === ep.episode_number);
+                        if (savedEp) video_url = savedEp.url || ""; // Read 'url' from existing record
+                    }
+                    episodesForJson.push({
+                        season: ep.season_number,
+                        episode: ep.episode_number,
+                        title: ep.name || `Episode ${ep.episode_number}`,
+                        url: video_url // ✅ CHANGED: Output 'url' for the JSON
                     });
                 });
-            }
-
-            episodesBody.innerHTML = '';
-            for (const season of data.seasons) {
-                if (season.season_number === 0) continue;
-                const header = document.createElement('tr');
-                header.className = 'season-header';
-                header.innerHTML = `<td colspan="3">Season ${season.season_number}</td>`;
-                episodesBody.appendChild(header);
-
-                const sRes = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${TMDB_API_KEY}`);
-                const sData = await sRes.json();
-                if (sData.episodes) sData.episodes.forEach(ep => {
-                    const row = document.createElement('tr');
-                    let savedLink = '';
-                    if (existingData && existingData.episodes) {
-                        const saved = existingData.episodes.find(e => parseInt(e.season) === ep.season_number && parseInt(e.episode) === ep.episode_number);
-                        if (saved) savedLink = saved.link;
-                    }
-                    row.innerHTML = `<td>${ep.episode_number}</td><td><strong>${ep.name}</strong></td><td><input type="text" class="video-link" value="${savedLink}" data-season="${ep.season_number}" data-episode="${ep.episode_number}" data-title="${ep.name}" data-thumb="${ep.still_path ? 'https://image.tmdb.org/t/p/w200'+ep.still_path : ''}"></td>`;
-                    episodesBody.appendChild(row);
-                });
-            }
-        } catch (e) { alert(e.message); }
+            });
+            episodesJsonInput.value = JSON.stringify(episodesForJson, null, 2);
+        } catch (e) { 
+            alert(`Error fetching data from TMDB: ${e.message}`);
+            episodesJsonInput.value = `// Error loading episodes.`;
+        }
     }
-
+    
     async function loadSeriesForEditing(id) {
         try {
             const record = await pb.collection('media').getOne(id);
             document.getElementById('recordId').value = record.id;
-            
+            saveBtn.textContent = "Update Series";
+
             const setCheck = (name, vals) => { if(vals) vals.forEach(v => { const cb = document.querySelector(`input[name="${name}"][value="${v}"]`); if(cb) cb.checked=true; }) };
             setCheck('vjs', record.vjs);
-            setCheck('genres', record.genres);
-            setCheck('type', record.type); // ✅ Load Special Categories
+            setCheck('tags', record.tags);
 
-            saveBtn.textContent = "Update Series";
-            if (!record.tmdbId) { alert("Missing TMDB ID, please re-add."); return; }
-            await loadTmdbDetails(record.tmdbId, record);
-        } catch (e) { alert(e.message); }
+            if (record.tmdb_id) {
+                await loadTmdbDetails(record.tmdb_id, record);
+            } else {
+                searchView.style.display = 'none'; detailsView.style.display = 'block';
+                document.getElementById('seriesTitle').textContent = record.title;
+                document.getElementById('seriesOverview').textContent = record.description;
+                document.getElementById('seriesPoster').src = record.poster || '';
+                episodesJsonInput.value = JSON.stringify(record.episodes || [], null, 2);
+            }
+        } catch (e) { alert(`Error loading series from database: ${e.message}`); }
     }
 
     document.getElementById('seriesForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         saveBtn.disabled = true; saveBtn.innerText = "Saving...";
-        const getChecked = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
-        
-        const episodes = [];
-        document.querySelectorAll('.video-link').forEach(inp => {
-            if (inp.value.trim()) episodes.push({ season: parseInt(inp.dataset.season), episode: parseInt(inp.dataset.episode), title: inp.dataset.title, thumbnail: inp.dataset.thumb, link: inp.value.trim() });
-        });
+        msgEl.style.display = 'none';
 
-        if (!episodes.length) { alert("Add at least one link."); saveBtn.disabled=false; return; }
+        let episodes;
+        try {
+            episodes = JSON.parse(episodesJsonInput.value);
+            if (!Array.isArray(episodes)) throw new Error("JSON data must be an array.");
+            if (episodes.length > 0) {
+                const firstEp = episodes[0];
+                // ✅ CHANGED: Validation now checks for 'url' to match the app's needs.
+                if (typeof firstEp.season !== 'number' || typeof firstEp.episode !== 'number' || typeof firstEp.url !== 'string') {
+                    throw new Error("Each episode must have season (number), episode (number), and url (string).");
+                }
+            }
+        } catch (err) {
+            msgEl.textContent = `Invalid Episodes JSON: ${err.message}`;
+            msgEl.className = "message error";
+            msgEl.style.display = 'block';
+            saveBtn.disabled = false; saveBtn.innerText = "Save Series";
+            return;
+        }
+        
+        const getChecked = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
+        const allSelectedTags = getChecked('tags');
+        const genreTags = allSelectedTags.filter(tag => TAGS_LIST.slice(TAGS_LIST.indexOf("ACTION")).includes(tag));
 
         const data = {
             title: document.getElementById('seriesTitle').textContent,
-            tmdbId: document.getElementById('tmdbId').value,
+            tmdb_id: document.getElementById('tmdb_id').value,
             description: document.getElementById('seriesOverview').textContent,
             poster: document.getElementById('posterUrl').value,
             backdrop: document.getElementById('backdropUrl').value,
-            releaseDate: document.getElementById('firstAirDate').value,
             vjs: getChecked('vjs'),
-            genres: getChecked('genres'),
-            type: getChecked('type'), // ✅ Save Special Categories
+            tags: allSelectedTags,
+            genres: genreTags,
             episodes: episodes,
             contentType: 'tv'
         };
 
         try {
             const id = document.getElementById('recordId').value;
-            if (id) await pb.collection('media').update(id, data);
-            else await pb.collection('media').create(data);
-            msgEl.textContent = "Success!"; msgEl.style.display = 'block';
+            if (id) {
+                await pb.collection('media').update(id, data);
+            } else {
+                await pb.collection('media').create(data);
+            }
+            msgEl.textContent = "Series saved successfully!";
+            msgEl.className = "message success";
+            msgEl.style.display = 'block';
             setTimeout(() => window.location.href='all-content.html', 1500);
-        } catch (e) { msgEl.textContent = e.message; msgEl.style.display = 'block'; saveBtn.disabled = false; }
+        } catch (err) {
+            msgEl.textContent = `Error: ${err.message}`;
+            msgEl.className = "message error";
+            msgEl.style.display = 'block';
+            saveBtn.disabled = false;
+            saveBtn.innerText = document.getElementById('recordId').value ? "Update Series" : "Save Series";
+        }
     });
 </script>
 </body>
