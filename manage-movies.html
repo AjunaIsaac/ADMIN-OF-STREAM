@@ -61,7 +61,7 @@
         <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
         <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
         <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
-        <a href="https://admin.streamzonemovies.online/user_management"><i class="fas fa-users-cog"></i> User Management</a>
+        <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
         <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
     </nav>
 
@@ -94,6 +94,8 @@
                 <input type="hidden" id="posterUrl">
                 <input type="hidden" id="backdropUrl">
                 <input type="hidden" id="releaseYear">
+                <!-- ✅ NEW: Stores the Clean Title (without year) for saving -->
+                <input type="hidden" id="cleanTitle">
 
                 <div class="form-group">
                     <label>Stream Link (Required)</label>
@@ -178,7 +180,6 @@
             data.results.forEach(movie => {
                 const card = document.createElement('div');
                 card.className = 'movie-card';
-                // ✅ NEW: Added year to the search result display for better clarity
                 const year = movie.release_date ? movie.release_date.split('-')[0] : '';
                 card.innerHTML = `<img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w200'+movie.poster_path : 'https://placehold.co/200'}" ><h3>${movie.title} (${year})</h3>`;
                 card.addEventListener('click', () => selectMovieFromSearch(movie));
@@ -194,19 +195,19 @@
         document.getElementById('recordId').value = ""; 
         saveBtn.innerText = "Save to Database";
 
-        // ✅ NEW: Extract Year from release_date (YYYY-MM-DD)
+        // Year Extraction
         let cleanYear = "";
         if (fullData.release_date) {
             cleanYear = fullData.release_date.split('-')[0];
         }
         document.getElementById('releaseYear').value = cleanYear;
 
-        // Display info
-        document.getElementById('displayTitle').textContent = fullData.title + (cleanYear ? ` (${cleanYear})` : "");
+        // ✅ IMPORTANT: Save clean title to hidden input, show Title (Year) in UI
+        document.getElementById('cleanTitle').value = fullData.title; // Just "Troll 2"
+        document.getElementById('displayTitle').textContent = fullData.title + (cleanYear ? ` (${cleanYear})` : ""); // UI: "Troll 2 (2025)"
+
         document.getElementById('displayOverview').textContent = fullData.overview;
         document.getElementById('displayPoster').src = fullData.poster_path ? `https://image.tmdb.org/t/p/w200${fullData.poster_path}` : '';
-        
-        // Hidden inputs
         document.getElementById('tmdb_id').value = fullData.id;
         document.getElementById('posterUrl').value = fullData.poster_path ? `https://image.tmdb.org/t/p/w500${fullData.poster_path}` : '';
         document.getElementById('backdropUrl').value = fullData.backdrop_path ? `https://image.tmdb.org/t/p/original${fullData.backdrop_path}` : '';
@@ -234,15 +235,17 @@
         try {
             const record = await pb.collection('media').getOne(id);
             document.getElementById('recordId').value = record.id;
-            document.getElementById('displayTitle').textContent = record.title;
+            
+            // ✅ Load clean title
+            document.getElementById('cleanTitle').value = record.title;
+            document.getElementById('displayTitle').textContent = record.title; // When editing, we usually just show title, or title (year) if we prefer
+
             document.getElementById('displayOverview').textContent = record.description;
             document.getElementById('displayPoster').src = record.poster || '';
             document.getElementById('stream_link').value = record.stream_link || '';
             document.getElementById('tmdb_id').value = record.tmdb_id || '';
             document.getElementById('posterUrl').value = record.poster || '';
             document.getElementById('backdropUrl').value = record.backdrop || '';
-            
-            // ✅ NEW: Load the year from database to the hidden input
             document.getElementById('releaseYear').value = record.year || '';
 
             const checkBoxes = (name, values) => {
@@ -257,7 +260,7 @@
             searchView.style.display = 'none';
             detailsView.style.display = 'block';
             saveBtn.innerText = "Update Movie";
-        } catch (err) { alert(err.message); window.location.href='manage-movies.html'; }
+        } catch (err) { alert(err.message); window.location.href='all-content.html'; }
     }
 
     document.getElementById('movieForm').addEventListener('submit', async (e) => {
@@ -270,13 +273,13 @@
         const selectedGenres = allSelectedTags.filter(tag => GENRE_LIST.includes(tag));
 
         const data = {
-            title: document.getElementById('displayTitle').textContent,
+            title: document.getElementById('cleanTitle').value, // ✅ SAVES "Troll 2" (Not "Troll 2 (2025)")
             tmdb_id: document.getElementById('tmdb_id').value,
             description: document.getElementById('displayOverview').textContent,
             stream_link: document.getElementById('stream_link').value,
             poster: document.getElementById('posterUrl').value,
             backdrop: document.getElementById('backdropUrl').value,
-            year: document.getElementById('releaseYear').value, // ✅ NEW: Save the year
+            year: document.getElementById('releaseYear').value, 
             vjs: getChecked('vjs'),
             tags: allSelectedTags, 
             genres: selectedGenres,
@@ -294,7 +297,7 @@
             msgEl.textContent = "Success! Movie saved correctly.";
             msgEl.className = "message success";
             msgEl.style.display = 'block';
-            setTimeout(() => window.location.href='manage-movies.html', 1500);
+            setTimeout(() => window.location.href='all-content.html', 1500);
         } catch (err) {
             msgEl.textContent = `Error: ${err.message}`;
             msgEl.className = "message error";
@@ -307,7 +310,7 @@
     document.getElementById('cancelBtn').addEventListener('click', () => {
         const id = document.getElementById('recordId').value;
         if(id) {
-            window.location.href='manage-movies.html';
+            window.location.href='all-content.html';
         } else {
             detailsView.style.display = 'none';
             searchView.style.display = 'block';
