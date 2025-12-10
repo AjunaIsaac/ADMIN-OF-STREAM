@@ -161,22 +161,19 @@
 
     const VJ_LIST = ["VJ JUNIOR", "VJ TONNY", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
     
-    // ✅ SEPARATE LISTS
     const GENRE_LIST = [
         "ACTION", "ADVENTURE", "ANIMATION", "COMEDY", "CRIME", "DOCUMENTARY", "DRAMA", 
         "FAMILY", "FANTASY", "HISTORY", "HORROR", "KUNGU FU", "LOVE STORY", "MUSIC", 
         "MYSTERY", "ROMANCE", "SCI FI", "SPORT", "THRILLER", "WAR", "WESTERN"
     ];
     
+    // Updated TAGS_LIST with all categories
     const TAGS_LIST = [
-    "latest_uploads",  
-    "Latest-TV-Series",  
-    "recent_tv_shows", 
-    "upcoming_shows", 
-    "k_dramas", 
-    "western_series",
-    "send_notification"
-];
+        "latest_uploads", "recent_movies", "most_liked", "romance", "Latest-TV-Series", 
+        "Latest-Movies", "recent_tv_shows", "upcoming_shows", "k_dramas", "indian", 
+        "action-thriller", "scifi-fantasy", "high-school", "animation", "horror", 
+        "comedy", "adventure", "nigerian", "western_series", "send_notification"
+    ];
 
     const searchView = document.getElementById('searchView');
     const detailsView = document.getElementById('detailsView');
@@ -187,7 +184,6 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         createCheckboxes(VJ_LIST, 'vjContainer', 'vjs');
-        // ✅ Create Separate Checkboxes
         createCheckboxes(GENRE_LIST, 'genresContainer', 'genres');
         createCheckboxes(TAGS_LIST, 'tagsContainer', 'tags');
 
@@ -251,7 +247,6 @@
             document.getElementById('posterUrl').value = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
             document.getElementById('backdropUrl').value = data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : '';
 
-            // ✅ RESET & SELECT GENRES
             document.querySelectorAll('input[name="genres"]').forEach(cb => cb.checked = false);
             document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
 
@@ -306,7 +301,6 @@
 
             const setCheck = (name, vals) => { if(vals) vals.forEach(v => { const cb = document.querySelector(`input[name="${name}"][value="${v}"]`); if(cb) cb.checked=true; }) };
             setCheck('vjs', record.vjs);
-            // ✅ Load separately
             setCheck('genres', record.genres);
             setCheck('tags', record.tags);
 
@@ -324,7 +318,7 @@
 
     document.getElementById('seriesForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        saveBtn.disabled = true; saveBtn.innerText = "Saving...";
+        saveBtn.disabled = true; saveBtn.innerText = "Checking duplicates...";
         msgEl.style.display = 'none';
 
         let episodes;
@@ -349,17 +343,42 @@
             backdrop: document.getElementById('backdropUrl').value,
             year: document.getElementById('releaseYear').value, 
             vjs: getChecked('vjs'),
-            // ✅ Save separately
             genres: getChecked('genres'),
             tags: getChecked('tags'),
             episodes: episodes,
             contentType: 'tv'
         };
 
+        const currentId = document.getElementById('recordId').value;
+
         try {
-            const id = document.getElementById('recordId').value;
-            if (id) {
-                await pb.collection('media').update(id, data);
+            // 🛑 DUPLICATE CHECK START
+            if (data.tmdb_id) {
+                const existingRecords = await pb.collection('media').getFullList({
+                    filter: `tmdb_id = "${data.tmdb_id}"`
+                });
+
+                const isSameVjs = (arr1, arr2) => {
+                    const a = [...(arr1 || [])].sort();
+                    const b = [...(arr2 || [])].sort();
+                    return JSON.stringify(a) === JSON.stringify(b);
+                };
+
+                const duplicate = existingRecords.find(r => {
+                    if (currentId && r.id === currentId) return false;
+                    return isSameVjs(r.vjs, data.vjs);
+                });
+
+                if (duplicate) {
+                    throw new Error(`DUPLICATE FOUND: This series already exists with these exact VJs.`);
+                }
+            }
+            // 🛑 DUPLICATE CHECK END
+
+            saveBtn.innerText = "Saving...";
+
+            if (currentId) {
+                await pb.collection('media').update(currentId, data);
             } else {
                 await pb.collection('media').create(data);
             }
@@ -372,7 +391,7 @@
             msgEl.className = "message error";
             msgEl.style.display = 'block';
             saveBtn.disabled = false;
-            saveBtn.innerText = document.getElementById('recordId').value ? "Update Series" : "Save Series";
+            saveBtn.innerText = currentId ? "Update Series" : "Save Series";
         }
     });
 </script>

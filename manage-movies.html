@@ -163,38 +163,25 @@
         </div>
 
     </div>
-<script>
+    <script>
     const pb = new PocketBase('https://db.streamzonemovies.online');
     pb.autoCancellation(false);
     const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5"; 
 
-    // ✅ STRICTLY GENRES ONLY
     const GENRE_LIST = [
         "ACTION", "ADVENTURE", "ANIMATION", "COMEDY", "CRIME", "DOCUMENTARY", "DRAMA", 
         "FAMILY", "FANTASY", "HISTORY", "HORROR", "KUNGU FU", "LOVE STORY", "MUSIC", 
         "MYSTERY", "ROMANCE", "SCI FI", "SPORT", "THRILLER", "WAR", "WESTERN"
     ];
     
-    // ✅ STRICTLY APP TAGS ONLY (Removed Genres from here)
+    // Updated TAGS_LIST with all categories
     const TAGS_LIST = [
-    "latest_uploads", 
-    "recent_movies", 
-    "most_liked", 
-    "romance",  
-    "Latest-Movies",  
-    "k_dramas", 
-    "indian", 
-    "action-thriller", 
-    "scifi-fantasy", 
-    "high-school",
-    // Added from your other lists:
-    "animation",
-    "horror",
-    "comedy",
-    "adventure",
-    "nigerian",
-    "send_notification"
-];
+        "latest_uploads", "recent_movies", "most_liked", "romance", "Latest-TV-Series", 
+        "Latest-Movies", "recent_tv_shows", "upcoming_shows", "k_dramas", "indian", 
+        "action-thriller", "scifi-fantasy", "high-school", "animation", "horror", 
+        "comedy", "adventure", "nigerian", "western_series", "send_notification"
+    ];
+
     const VJ_LIST = ["VJ JUNIOR", "VJ TONNY", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
 
     const searchView = document.getElementById('searchView');
@@ -217,7 +204,6 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         createCheckboxes(VJ_LIST, 'vjContainer', 'vjs');
-        // ✅ Create separate checkboxes
         createCheckboxes(GENRE_LIST, 'genresContainer', 'genres');
         createCheckboxes(TAGS_LIST, 'tagsContainer', 'tags');
 
@@ -253,7 +239,6 @@
         document.getElementById('recordId').value = ""; 
         saveBtn.innerText = "Save to Database";
 
-        // Year & Title Logic
         let cleanYear = "";
         if (fullData.release_date) {
             cleanYear = fullData.release_date.split('-')[0];
@@ -268,17 +253,13 @@
         document.getElementById('posterUrl').value = fullData.poster_path ? `https://image.tmdb.org/t/p/w500${fullData.poster_path}` : '';
         document.getElementById('backdropUrl').value = fullData.backdrop_path ? `https://image.tmdb.org/t/p/original${fullData.backdrop_path}` : '';
 
-        // ✅ RESET & SELECT GENRES
         document.querySelectorAll('input[name="genres"]').forEach(cb => cb.checked = false);
         document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
 
         if (fullData.genres) {
             fullData.genres.forEach(g => {
                 const tmdbGenre = g.name.toUpperCase();
-                // Map Science Fiction -> SCI FI
                 const mappedGenre = tmdbGenre === 'SCIENCE FICTION' ? 'SCI FI' : tmdbGenre;
-                
-                // Check if it exists in our Genre List
                 if(GENRE_LIST.includes(mappedGenre)) {
                     const cb = document.querySelector(`input[name="genres"][value="${mappedGenre}"]`);
                     if(cb) cb.checked = true;
@@ -286,7 +267,6 @@
             });
         }
         
-        // Auto-select 'latest_uploads'
         const latestCb = document.querySelector('input[name="tags"][value="latest_uploads"]');
         if(latestCb) latestCb.checked = true;
 
@@ -316,7 +296,6 @@
                 });
             };
             checkBoxes('vjs', record.vjs);
-            // ✅ Load Genres and Tags Separately
             checkBoxes('genres', record.genres); 
             checkBoxes('tags', record.tags); 
 
@@ -328,7 +307,8 @@
 
     document.getElementById('movieForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        saveBtn.disabled = true; saveBtn.innerText = "Processing...";
+        saveBtn.disabled = true; saveBtn.innerText = "Checking duplicates...";
+        msgEl.style.display = 'none';
 
         const getChecked = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
 
@@ -341,16 +321,46 @@
             backdrop: document.getElementById('backdropUrl').value,
             year: document.getElementById('releaseYear').value, 
             vjs: getChecked('vjs'),
-            // ✅ Save separately
             genres: getChecked('genres'),
             tags: getChecked('tags'), 
             contentType: 'movie'
         };
-        
+
+        const currentId = document.getElementById('recordId').value;
+
         try {
-            const id = document.getElementById('recordId').value;
-            if (id) {
-                await pb.collection('media').update(id, data);
+            // 🛑 DUPLICATE CHECK START
+            if (data.tmdb_id) {
+                // 1. Find all records with this TMDB ID
+                const existingRecords = await pb.collection('media').getFullList({
+                    filter: `tmdb_id = "${data.tmdb_id}"`
+                });
+
+                // 2. Helper to compare VJ arrays (ignores order: [A,B] == [B,A])
+                const isSameVjs = (arr1, arr2) => {
+                    const a = [...(arr1 || [])].sort();
+                    const b = [...(arr2 || [])].sort();
+                    return JSON.stringify(a) === JSON.stringify(b);
+                };
+
+                // 3. Check for match
+                const duplicate = existingRecords.find(r => {
+                    // If editing, skip our own record
+                    if (currentId && r.id === currentId) return false;
+                    // Check if VJs match
+                    return isSameVjs(r.vjs, data.vjs);
+                });
+
+                if (duplicate) {
+                    throw new Error(`DUPLICATE FOUND: This movie already exists with these exact VJs.`);
+                }
+            }
+            // 🛑 DUPLICATE CHECK END
+
+            saveBtn.innerText = "Processing...";
+
+            if (currentId) {
+                await pb.collection('media').update(currentId, data);
             } else {
                 await pb.collection('media').create(data);
             }
@@ -359,12 +369,13 @@
             msgEl.className = "message success";
             msgEl.style.display = 'block';
             setTimeout(() => window.location.href='all-content.html', 1500);
+
         } catch (err) {
             msgEl.textContent = `Error: ${err.message}`;
             msgEl.className = "message error";
             msgEl.style.display = 'block';
             saveBtn.disabled = false;
-            saveBtn.innerText = id ? "Update Movie" : "Save to Database";
+            saveBtn.innerText = currentId ? "Update Movie" : "Save to Database";
         }
     });
 
