@@ -368,7 +368,7 @@
             msgEl.textContent = "Success! Movie saved correctly.";
             msgEl.className = "message success";
             msgEl.style.display = 'block';
-            setTimeout(() => window.location.href='all-content.html', 1500);
+            setTimeout(() => window.location.href='#', 1500);
 
         } catch (err) {
             msgEl.textContent = `Error: ${err.message}`;
@@ -382,7 +382,7 @@
     document.getElementById('cancelBtn').addEventListener('click', () => {
         const id = document.getElementById('recordId').value;
         if(id) {
-            window.location.href='all-content.html';
+            window.location.href='#';
         } else {
             detailsView.style.display = 'none';
             searchView.style.display = 'block';
