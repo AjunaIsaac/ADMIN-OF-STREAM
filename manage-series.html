@@ -97,6 +97,9 @@
                 <input type="hidden" id="tmdb_id">
                 <input type="hidden" id="posterUrl">
                 <input type="hidden" id="backdropUrl">
+                
+                <!-- ✅ NEW: Hidden input for Year -->
+                <input type="hidden" id="releaseYear">
 
                 <div class="form-group">
                     <label>VJ Name</label>
@@ -128,6 +131,7 @@
     </div>
 <script>
     const pb = new PocketBase('https://db.streamzonemovies.online');
+    pb.autoCancellation(false);
     const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5";
 
     const VJ_LIST = ["VJ JUNIOR", "VJ TONNY", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
@@ -144,7 +148,6 @@
         createCheckboxes(VJ_LIST, 'vjContainer', 'vjs');
         createCheckboxes(TAGS_LIST, 'tagsContainer', 'tags');
 
-        // ✅ CHANGED: Example now uses 'url' to match the app's requirement
         const example = [{ season: 1, episode: 1, title: "Episode Title From TMDB", url: "YOUR_VIDEO_URL_HERE" }];
         document.getElementById('jsonExample').textContent = JSON.stringify(example, null, 2);
 
@@ -177,7 +180,9 @@
             data.results.forEach(series => {
                 const card = document.createElement('div');
                 card.className = 'series-card';
-                card.innerHTML = `<img src="${series.poster_path ? 'https://image.tmdb.org/t/p/w200'+series.poster_path : 'https://placehold.co/200'}" ><h3>${series.name}</h3>`;
+                // ✅ NEW: Added Year Display (using first_air_date)
+                const year = series.first_air_date ? series.first_air_date.split('-')[0] : '';
+                card.innerHTML = `<img src="${series.poster_path ? 'https://image.tmdb.org/t/p/w200'+series.poster_path : 'https://placehold.co/200'}" ><h3>${series.name} (${year})</h3>`;
                 card.addEventListener('click', () => loadTmdbDetails(series.id));
                 searchResults.appendChild(card);
             });
@@ -192,7 +197,12 @@
             const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}`);
             const data = await res.json();
 
-            document.getElementById('seriesTitle').textContent = data.name;
+            // ✅ NEW: Extract Year
+            let cleanYear = "";
+            if (data.first_air_date) cleanYear = data.first_air_date.split('-')[0];
+            document.getElementById('releaseYear').value = cleanYear;
+
+            document.getElementById('seriesTitle').textContent = data.name + (cleanYear ? ` (${cleanYear})` : "");
             document.getElementById('seriesOverview').textContent = data.overview;
             document.getElementById('seriesPoster').src = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
             document.getElementById('tmdb_id').value = String(data.id);
@@ -220,13 +230,13 @@
                     let video_url = "";
                     if (existingRecord && existingRecord.episodes) {
                         const savedEp = existingRecord.episodes.find(e => e.season === ep.season_number && e.episode === ep.episode_number);
-                        if (savedEp) video_url = savedEp.url || ""; // Read 'url' from existing record
+                        if (savedEp) video_url = savedEp.url || ""; 
                     }
                     episodesForJson.push({
                         season: ep.season_number,
                         episode: ep.episode_number,
                         title: ep.name || `Episode ${ep.episode_number}`,
-                        url: video_url // ✅ CHANGED: Output 'url' for the JSON
+                        url: video_url 
                     });
                 });
             });
@@ -242,6 +252,9 @@
             const record = await pb.collection('media').getOne(id);
             document.getElementById('recordId').value = record.id;
             saveBtn.textContent = "Update Series";
+
+            // ✅ NEW: Load saved year
+            document.getElementById('releaseYear').value = record.year || '';
 
             const setCheck = (name, vals) => { if(vals) vals.forEach(v => { const cb = document.querySelector(`input[name="${name}"][value="${v}"]`); if(cb) cb.checked=true; }) };
             setCheck('vjs', record.vjs);
@@ -270,7 +283,6 @@
             if (!Array.isArray(episodes)) throw new Error("JSON data must be an array.");
             if (episodes.length > 0) {
                 const firstEp = episodes[0];
-                // ✅ CHANGED: Validation now checks for 'url' to match the app's needs.
                 if (typeof firstEp.season !== 'number' || typeof firstEp.episode !== 'number' || typeof firstEp.url !== 'string') {
                     throw new Error("Each episode must have season (number), episode (number), and url (string).");
                 }
@@ -288,17 +300,22 @@
         const genreTags = allSelectedTags.filter(tag => TAGS_LIST.slice(TAGS_LIST.indexOf("ACTION")).includes(tag));
 
         const data = {
-            title: document.getElementById('seriesTitle').textContent,
+            title: document.getElementById('seriesTitle').textContent.split(' (')[0], // Remove (Year) from title before saving if preferred, or leave as is. Current: saves what is on screen.
             tmdb_id: document.getElementById('tmdb_id').value,
             description: document.getElementById('seriesOverview').textContent,
             poster: document.getElementById('posterUrl').value,
             backdrop: document.getElementById('backdropUrl').value,
+            year: document.getElementById('releaseYear').value, // ✅ NEW: Save the year
             vjs: getChecked('vjs'),
             tags: allSelectedTags,
             genres: genreTags,
             episodes: episodes,
             contentType: 'tv'
         };
+
+        // Fix title cleanup to avoid saving "Title (2023)" repeatedly
+        const cleanTitle = document.getElementById('seriesTitle').textContent.replace(/\s\(\d{4}\)$/, '');
+        data.title = cleanTitle;
 
         try {
             const id = document.getElementById('recordId').value;

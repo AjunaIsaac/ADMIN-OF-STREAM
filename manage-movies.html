@@ -93,6 +93,7 @@
                 <input type="hidden" id="tmdb_id">
                 <input type="hidden" id="posterUrl">
                 <input type="hidden" id="backdropUrl">
+                <input type="hidden" id="releaseYear">
 
                 <div class="form-group">
                     <label>Stream Link (Required)</label>
@@ -123,20 +124,18 @@
     pb.autoCancellation(false);
     const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5"; 
 
-    // ✅ DEFINED a separate list for just genres
     const GENRE_LIST = [
         "ACTION", "ADVENTURE", "LOVE STORY", "CRIME", "FAMILY", "SCI FI", 
         "KUNGU FU", "DRAMA", "SPORT", "THRILLER", "FANTASY", "HISTORY", "MYSTERY", "WAR",
         "HORROR", "ANIMATION", "COMEDY"
     ];
     
-    // This list now contains both sections and genres
     const TAGS_LIST = [
         "latest_uploads", "romance", "recent_movies", "k_dramas", "indian", "horror",
         "action-thriller", "animation", "scifi-fantasy", "adventure", "high-school", 
         "comedy", "most_liked", "upcoming_shows",
-        ...GENRE_LIST // Automatically include all genres in the main tags list
-    ].filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
+        ...GENRE_LIST 
+    ].filter((v, i, a) => a.indexOf(v) === i); 
 
     const VJ_LIST = ["VJ JUNIOR", "VJ TONNY", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
 
@@ -179,7 +178,9 @@
             data.results.forEach(movie => {
                 const card = document.createElement('div');
                 card.className = 'movie-card';
-                card.innerHTML = `<img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w200'+movie.poster_path : 'https://placehold.co/200'}" ><h3>${movie.title}</h3>`;
+                // ✅ NEW: Added year to the search result display for better clarity
+                const year = movie.release_date ? movie.release_date.split('-')[0] : '';
+                card.innerHTML = `<img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w200'+movie.poster_path : 'https://placehold.co/200'}" ><h3>${movie.title} (${year})</h3>`;
                 card.addEventListener('click', () => selectMovieFromSearch(movie));
                 searchResults.appendChild(card);
             });
@@ -193,13 +194,24 @@
         document.getElementById('recordId').value = ""; 
         saveBtn.innerText = "Save to Database";
 
-        document.getElementById('displayTitle').textContent = fullData.title;
+        // ✅ NEW: Extract Year from release_date (YYYY-MM-DD)
+        let cleanYear = "";
+        if (fullData.release_date) {
+            cleanYear = fullData.release_date.split('-')[0];
+        }
+        document.getElementById('releaseYear').value = cleanYear;
+
+        // Display info
+        document.getElementById('displayTitle').textContent = fullData.title + (cleanYear ? ` (${cleanYear})` : "");
         document.getElementById('displayOverview').textContent = fullData.overview;
         document.getElementById('displayPoster').src = fullData.poster_path ? `https://image.tmdb.org/t/p/w200${fullData.poster_path}` : '';
+        
+        // Hidden inputs
         document.getElementById('tmdb_id').value = fullData.id;
         document.getElementById('posterUrl').value = fullData.poster_path ? `https://image.tmdb.org/t/p/w500${fullData.poster_path}` : '';
         document.getElementById('backdropUrl').value = fullData.backdrop_path ? `https://image.tmdb.org/t/p/original${fullData.backdrop_path}` : '';
 
+        // Auto-select genres
         document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
         if (fullData.genres) {
             fullData.genres.forEach(g => {
@@ -229,6 +241,9 @@
             document.getElementById('tmdb_id').value = record.tmdb_id || '';
             document.getElementById('posterUrl').value = record.poster || '';
             document.getElementById('backdropUrl').value = record.backdrop || '';
+            
+            // ✅ NEW: Load the year from database to the hidden input
+            document.getElementById('releaseYear').value = record.year || '';
 
             const checkBoxes = (name, values) => {
                 if(values && Array.isArray(values)) values.forEach(v => {
@@ -251,13 +266,9 @@
 
         const getChecked = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
 
-        // ✅ Get ALL selected tags (sections + genres)
         const allSelectedTags = getChecked('tags');
-        
-        // ✅ Filter the selected tags to find ONLY the ones that are genres
         const selectedGenres = allSelectedTags.filter(tag => GENRE_LIST.includes(tag));
 
-        // ✅ UPDATED: The data object now includes the 'genres' field
         const data = {
             title: document.getElementById('displayTitle').textContent,
             tmdb_id: document.getElementById('tmdb_id').value,
@@ -265,9 +276,10 @@
             stream_link: document.getElementById('stream_link').value,
             poster: document.getElementById('posterUrl').value,
             backdrop: document.getElementById('backdropUrl').value,
+            year: document.getElementById('releaseYear').value, // ✅ NEW: Save the year
             vjs: getChecked('vjs'),
             tags: allSelectedTags, 
-            genres: selectedGenres, // Save the filtered genres here
+            genres: selectedGenres,
             contentType: 'movie'
         };
         
