@@ -122,7 +122,7 @@
 
                 <div style="display: flex; gap: 15px; margin-top: 20px;">
                     <button type="submit" class="btn btn-primary" id="saveBtn">Save Series</button>
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='all-content.html'">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='manage-series.html'">Cancel</button>
                 </div>
             </form>
             <div id="formMessage" class="message" style="display: none;"></div>
@@ -327,7 +327,7 @@
             msgEl.textContent = "Series saved successfully!";
             msgEl.className = "message success";
             msgEl.style.display = 'block';
-            setTimeout(() => window.location.href='all-content.html', 1500);
+            setTimeout(() => window.location.href='manage-series.html', 1500);
         } catch (err) {
             msgEl.textContent = `Error: ${err.message}`;
             msgEl.className = "message error";

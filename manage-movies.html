@@ -257,7 +257,7 @@
             searchView.style.display = 'none';
             detailsView.style.display = 'block';
             saveBtn.innerText = "Update Movie";
-        } catch (err) { alert(err.message); window.location.href='all-content.html'; }
+        } catch (err) { alert(err.message); window.location.href='manage-movies.html'; }
     }
 
     document.getElementById('movieForm').addEventListener('submit', async (e) => {
@@ -294,7 +294,7 @@
             msgEl.textContent = "Success! Movie saved correctly.";
             msgEl.className = "message success";
             msgEl.style.display = 'block';
-            setTimeout(() => window.location.href='all-content.html', 1500);
+            setTimeout(() => window.location.href='manage-movies.html', 1500);
         } catch (err) {
             msgEl.textContent = `Error: ${err.message}`;
             msgEl.className = "message error";
@@ -307,7 +307,7 @@
     document.getElementById('cancelBtn').addEventListener('click', () => {
         const id = document.getElementById('recordId').value;
         if(id) {
-            window.location.href='all-content.html';
+            window.location.href='manage-movies.html';
         } else {
             detailsView.style.display = 'none';
             searchView.style.display = 'block';
