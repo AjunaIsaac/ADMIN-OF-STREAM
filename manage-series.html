@@ -167,7 +167,6 @@
         "MYSTERY", "ROMANCE", "SCI FI", "SPORT", "THRILLER", "WAR", "WESTERN"
     ];
     
-    // Updated TAGS_LIST with all categories
     const TAGS_LIST = [
         "latest_uploads", "recent_movies", "most_liked", "romance", "Latest-TV-Series", 
         "Latest-Movies", "recent_tv_shows", "upcoming_shows", "k_dramas", "indian", 
@@ -316,15 +315,47 @@
         } catch (e) { alert(`Error loading series from database: ${e.message}`); }
     }
 
+    // --- REPLACED SUBMIT LISTENER WITH CONVERSION LOGIC ---
     document.getElementById('seriesForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        saveBtn.disabled = true; saveBtn.innerText = "Checking duplicates...";
+        saveBtn.disabled = true; saveBtn.innerText = "Processing...";
         msgEl.style.display = 'none';
 
         let episodes;
         try {
-            episodes = JSON.parse(episodesJsonInput.value);
-            if (!Array.isArray(episodes)) throw new Error("JSON data must be an array.");
+            const rawJson = JSON.parse(episodesJsonInput.value);
+            if (!Array.isArray(rawJson)) throw new Error("JSON data must be an array.");
+
+            // CHECK IF "WRONG" FORMAT (Nested episodes with videoUrl)
+            if (rawJson.length > 0 && rawJson[0].hasOwnProperty('episodes') && Array.isArray(rawJson[0].episodes)) {
+                
+                console.log("Detected nested format. Converting...");
+                let convertedEpisodes = [];
+                
+                // Flatten logic
+                rawJson.forEach(seasonItem => {
+                    const currentSeason = seasonItem.season_number || 1;
+                    if (seasonItem.episodes && Array.isArray(seasonItem.episodes)) {
+                        seasonItem.episodes.forEach(ep => {
+                            convertedEpisodes.push({
+                                season: currentSeason,
+                                episode: ep.episode_number,
+                                title: ep.title || `Episode ${ep.episode_number}`,
+                                // CONVERT 'videoUrl' to 'url'
+                                url: ep.videoUrl || ep.url || "" 
+                            });
+                        });
+                    }
+                });
+
+                episodes = convertedEpisodes;
+                // Update the textarea visually so you see the fix
+                episodesJsonInput.value = JSON.stringify(episodes, null, 2);
+            } else {
+                // Already in correct format
+                episodes = rawJson;
+            }
+
         } catch (err) {
             msgEl.textContent = `Invalid Episodes JSON: ${err.message}`;
             msgEl.className = "message error";
@@ -352,7 +383,6 @@
         const currentId = document.getElementById('recordId').value;
 
         try {
-            // 🛑 DUPLICATE CHECK START
             if (data.tmdb_id) {
                 const existingRecords = await pb.collection('media').getFullList({
                     filter: `tmdb_id = "${data.tmdb_id}"`
@@ -373,9 +403,8 @@
                     throw new Error(`DUPLICATE FOUND: This series already exists with these exact VJs.`);
                 }
             }
-            // 🛑 DUPLICATE CHECK END
 
-            saveBtn.innerText = "Saving...";
+            saveBtn.innerText = "Saving to Database...";
 
             if (currentId) {
                 await pb.collection('media').update(currentId, data);
