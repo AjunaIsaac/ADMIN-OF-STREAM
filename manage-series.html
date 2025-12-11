@@ -246,17 +246,21 @@
             document.getElementById('posterUrl').value = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
             document.getElementById('backdropUrl').value = data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : '';
 
-            document.querySelectorAll('input[name="genres"]').forEach(cb => cb.checked = false);
-            document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
+            // ONLY clear check boxes if we are NOT editing an existing record
+            // or if we are just starting a fresh search
+            if (!existingRecord) {
+                document.querySelectorAll('input[name="genres"]').forEach(cb => cb.checked = false);
+                document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
 
-            if (data.genres && !existingRecord) {
-                data.genres.forEach(g => {
-                    const tmdbGenre = g.name.toUpperCase();
-                    const mappedGenre = tmdbGenre === 'SCI-FI & FANTASY' ? 'SCI FI' : tmdbGenre;
-                    if(GENRE_LIST.includes(mappedGenre)) {
-                        document.querySelector(`input[name="genres"][value="${mappedGenre}"]`).checked = true;
-                    }
-                });
+                if (data.genres) {
+                    data.genres.forEach(g => {
+                        const tmdbGenre = g.name.toUpperCase();
+                        const mappedGenre = tmdbGenre === 'SCI-FI & FANTASY' ? 'SCI FI' : tmdbGenre;
+                        if(GENRE_LIST.includes(mappedGenre)) {
+                            document.querySelector(`input[name="genres"][value="${mappedGenre}"]`).checked = true;
+                        }
+                    });
+                }
             }
 
             const episodePromises = data.seasons
@@ -298,11 +302,7 @@
             document.getElementById('seriesTitle').textContent = record.title; 
             document.getElementById('releaseYear').value = record.year || '';
 
-            const setCheck = (name, vals) => { if(vals) vals.forEach(v => { const cb = document.querySelector(`input[name="${name}"][value="${v}"]`); if(cb) cb.checked=true; }) };
-            setCheck('vjs', record.vjs);
-            setCheck('genres', record.genres);
-            setCheck('tags', record.tags);
-
+            // 1. First, Load TMDB Data (which might try to reset checkboxes)
             if (record.tmdb_id) {
                 await loadTmdbDetails(record.tmdb_id, record);
             } else {
@@ -312,10 +312,26 @@
                 document.getElementById('seriesPoster').src = record.poster || '';
                 episodesJsonInput.value = JSON.stringify(record.episodes || [], null, 2);
             }
+
+            // 2. AFTER TMDB is done, force the checkboxes to match the Database Record
+            // This prevents TMDB from wiping out your saved genres/tags/vjs
+            const setCheck = (name, vals) => { 
+                if(vals) vals.forEach(v => { 
+                    const cb = document.querySelector(`input[name="${name}"][value="${v}"]`); 
+                    if(cb) cb.checked = true; 
+                }) 
+            };
+            
+            // Clear checks first just in case
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+            setCheck('vjs', record.vjs);
+            setCheck('genres', record.genres);
+            setCheck('tags', record.tags);
+
         } catch (e) { alert(`Error loading series from database: ${e.message}`); }
     }
 
-    // --- REPLACED SUBMIT LISTENER WITH CONVERSION LOGIC ---
     document.getElementById('seriesForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         saveBtn.disabled = true; saveBtn.innerText = "Processing...";
@@ -326,35 +342,41 @@
             const rawJson = JSON.parse(episodesJsonInput.value);
             if (!Array.isArray(rawJson)) throw new Error("JSON data must be an array.");
 
-            // CHECK IF "WRONG" FORMAT (Nested episodes with videoUrl)
+            // -------------------------------------------------------------
+            // FIX: "WRONG" JSON CONVERSION LOGIC
+            // -------------------------------------------------------------
             if (rawJson.length > 0 && rawJson[0].hasOwnProperty('episodes') && Array.isArray(rawJson[0].episodes)) {
                 
-                console.log("Detected nested format. Converting...");
+                console.log("Nested JSON detected. Converting...");
                 let convertedEpisodes = [];
                 
-                // Flatten logic
                 rawJson.forEach(seasonItem => {
-                    const currentSeason = seasonItem.season_number || 1;
+                    const currentSeason = parseInt(seasonItem.season_number || 1);
+                    
                     if (seasonItem.episodes && Array.isArray(seasonItem.episodes)) {
                         seasonItem.episodes.forEach(ep => {
+                            // PRIORITIZE videoUrl. Trim whitespace to avoid broken links.
+                            const vUrl = ep.videoUrl ? ep.videoUrl.trim() : "";
+                            const regUrl = ep.url ? ep.url.trim() : "";
+
                             convertedEpisodes.push({
                                 season: currentSeason,
-                                episode: ep.episode_number,
+                                episode: parseInt(ep.episode_number),
                                 title: ep.title || `Episode ${ep.episode_number}`,
-                                // CONVERT 'videoUrl' to 'url'
-                                url: ep.videoUrl || ep.url || "" 
+                                url: vUrl || regUrl // If videoUrl exists, use it. Else use url.
                             });
                         });
                     }
                 });
 
                 episodes = convertedEpisodes;
-                // Update the textarea visually so you see the fix
+                // Update text area so user sees the fixed format immediately
                 episodesJsonInput.value = JSON.stringify(episodes, null, 2);
             } else {
-                // Already in correct format
+                // Already Flat Format
                 episodes = rawJson;
             }
+            // -------------------------------------------------------------
 
         } catch (err) {
             msgEl.textContent = `Invalid Episodes JSON: ${err.message}`;
