@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Radio Cities - Admin</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div id="adminPanel" style="display: block; width: 100%;">
+        <!-- Your menu can go here if needed -->
+        <div class="main-content" id="mainContentArea">
+            <div class="admin-header">
+                <h1>Manage Radio Cities</h1>
+            </div>
+            
+            <div class="page-container" style="display: block;">
+                <form id="addCityForm">
+                    <h3>Add New City</h3>
+                    <div class="form-group">
+                        <label for="cityName">City Name</label>
+                        <input type="text" id="cityName" required>
+                    </div>
+                    <button type="submit" id="addCityBtn">Add City<span class="spinner"></span></button>
+                </form>
+                <div id="message" class="message"></div>
+
+                <div class="content-table-container">
+                    <h3>Existing Cities</h3>
+                    <table id="citiesTable">
+                        <thead>
+                            <tr><th>Name</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="citiesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pb = new PocketBase('https://db.streamzonemovies.online');
+
+            const addCityForm = document.getElementById('addCityForm');
+            const addCityBtn = document.getElementById('addCityBtn');
+            const messageDiv = document.getElementById('message');
+            const tableBody = document.getElementById('citiesTableBody');
+            const CITIES_COLLECTION = 'radio_cities';
+
+            const setLoading = (button, isLoading) => {
+                const spinner = button.querySelector('.spinner');
+                button.disabled = isLoading;
+                if (spinner) spinner.style.display = isLoading ? 'inline-block' : 'none';
+            };
+            const displayMessage = (element, message, type) => {
+                element.textContent = message;
+                element.className = `message ${type}`;
+                element.style.display = 'block';
+            };
+
+            const loadCities = async () => {
+                tableBody.innerHTML = '<tr><td colspan="2">Loading...</td></tr>';
+                try {
+                    const records = await pb.collection(CITIES_COLLECTION).getFullList({
+                        sort: 'name',
+                    });
+
+                    if (records.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="2">No cities found.</td></tr>';
+                        return;
+                    }
+                    tableBody.innerHTML = '';
+                    records.forEach(record => {
+                        const row = `
+                            <tr>
+                                <td>${record.name}</td>
+                                <td><button class="delete-btn" data-id="${record.id}"><i class="fas fa-trash-alt"></i></button></td>
+                            </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+                } catch (error) {
+                    tableBody.innerHTML = `<tr><td colspan="2" style="color:red;">Error: ${error.message}</td></tr>`;
+                }
+            };
+
+            addCityForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setLoading(addCityBtn, true);
+                const name = document.getElementById('cityName').value.trim();
+
+                if (!name) {
+                    displayMessage(messageDiv, 'City name is required.', 'error');
+                    setLoading(addCityBtn, false);
+                    return;
+                }
+
+                try {
+                    await pb.collection(CITIES_COLLECTION).create({ name });
+                    displayMessage(messageDiv, 'City added successfully!', 'success');
+                    addCityForm.reset();
+                    loadCities();
+                } catch (error) {
+                    const serverError = error.data?.data?.name?.message || error.response?.message || error.message;
+                    displayMessage(messageDiv, `Error: ${serverError}`, 'error');
+                } finally {
+                    setLoading(addCityBtn, false);
+                }
+            });
+
+            tableBody.addEventListener('click', async (e) => {
+                const target = e.target.closest('.delete-btn');
+                if (target) {
+                    const recordId = target.dataset.id;
+                    if (confirm('Are you sure you want to delete this city?')) {
+                        try {
+                            await pb.collection(CITIES_COLLECTION).delete(recordId);
+                            displayMessage(messageDiv, 'City deleted.', 'success');
+                            loadCities();
+                        } catch (error) {
+                            displayMessage(messageDiv, `Error: ${error.message}`, 'error');
+                        }
+                    }
+                }
+            });
+
+            loadCities();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Radio Station - Admin</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div id="adminPanel" style="display: block; width: 100%;">
+        <div class="main-content" id="mainContentArea">
+            <div class="admin-header">
+                <h1>Add Radio Station</h1>
+            </div>
+            
+            <div class="page-container" style="display: block;">
+                <form id="addRadioForm">
+                    <div class="form-group">
+                        <label for="stationName">Station Name</label>
+                        <input type="text" id="stationName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="stationFrequency">Frequency / Tagline</label>
+                        <input type="text" id="stationFrequency">
+                    </div>
+                    <div class="form-group">
+                        <label>Categories (Tags)</label>
+                        <div class="checkbox-group" id="stationCategoriesCheckboxes">
+                            <p>Loading categories...</p>
+                        </div>
+                    </div>
+
+                    <!-- ✅ CITY DROPDOWN ADDED BACK -->
+                    <div class="form-group">
+                        <label for="stationCity">City</label>
+                        <select id="stationCity" required>
+                            <option value="">Loading cities...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stationLogoUrl">Logo URL (Image)</label>
+                        <input type="url" id="stationLogoUrl" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="stationStreamUrl">Stream URL</label>
+                        <input type="url" id="stationStreamUrl" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="stationOrder">Order (e.g., 1, 2, 3)</label>
+                        <input type="number" id="stationOrder" value="100">
+                    </div>
+                    <button type="submit" id="addRadioBtn">Add Radio Station<span class="spinner"></span></button>
+                </form>
+                <div id="addMessage" class="message"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const pb = new PocketBase('https://db.streamzonemovies.online');
+
+            const addRadioForm = document.getElementById('addRadioForm');
+            const addRadioBtn = document.getElementById('addRadioBtn');
+            const addMessage = document.getElementById('addMessage');
+            const categoriesContainer = document.getElementById('stationCategoriesCheckboxes');
+            const citySelect = document.getElementById('stationCity'); // ✅ Get city select element
+
+            const setLoading = (button, isLoading) => {
+                const spinner = button.querySelector('.spinner');
+                button.disabled = isLoading;
+                if(spinner) spinner.style.display = isLoading ? 'inline-block' : 'none';
+            };
+            const displayMessage = (element, message, type) => {
+                element.textContent = message;
+                element.className = `message ${type}`;
+                element.style.display = 'block';
+            };
+
+            const loadCategories = async () => {
+                try {
+                    const records = await pb.collection('radio_categories').getFullList({ sort: 'title' });
+                    if (records.length === 0) {
+                        categoriesContainer.innerHTML = "<p>No categories found.</p>";
+                        return;
+                    }
+                    let checkboxesHTML = '';
+                    records.forEach(record => {
+                        checkboxesHTML += `
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="cat_${record.id}" name="stationCategory" value="${record.tag}">
+                                <label for="cat_${record.id}">${record.title}</label>
+                            </div>
+                        `;
+                    });
+                    categoriesContainer.innerHTML = checkboxesHTML;
+                } catch (error) {
+                    categoriesContainer.innerHTML = `<p style="color:red;">Error loading categories: ${error.message}</p>`;
+                }
+            };
+            
+            // ✅ NEW: FUNCTION TO LOAD CITIES
+            const loadCities = async () => {
+                try {
+                    const records = await pb.collection('radio_cities').getFullList({ sort: 'name' });
+                    if (records.length === 0) {
+                        citySelect.innerHTML = "<option value=''>No cities found. Add one first.</option>";
+                        return;
+                    }
+                    let optionsHTML = '<option value="">-- Select a City --</option>';
+                    records.forEach(record => {
+                        optionsHTML += `<option value="${record.name}">${record.name}</option>`;
+                    });
+                    citySelect.innerHTML = optionsHTML;
+                } catch (error) {
+                    citySelect.innerHTML = `<option value=''>Error loading cities</option>`;
+                }
+            };
+
+            addRadioForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setLoading(addRadioBtn, true);
+                displayMessage(addMessage, '', '');
+
+                const name = document.getElementById('stationName').value.trim();
+                const frequency = document.getElementById('stationFrequency').value.trim();
+                const city = citySelect.value; // ✅ Get city value
+                const image = document.getElementById('stationLogoUrl').value.trim();
+                const stream_url = document.getElementById('stationStreamUrl').value.trim();
+                const order = parseInt(document.getElementById('stationOrder').value, 10);
+                const tags = Array.from(document.querySelectorAll('input[name="stationCategory"]:checked')).map(cb => cb.value);
+
+                if (!name || !image || !stream_url || !city) {
+                    displayMessage(addMessage, 'Name, City, Logo URL, and Stream URL are required.', 'error');
+                    setLoading(addRadioBtn, false);
+                    return;
+                }
+
+                const data = {
+                    name,
+                    frequency,
+                    city, // ✅ Add city to data payload
+                    image,
+                    stream_url,
+                    tags,
+                    order: isNaN(order) ? 100 : order
+                };
+
+                try {
+                    const record = await pb.collection('radio').create(data);
+                    displayMessage(addMessage, `Station "${name}" added successfully!`, 'success');
+                    addRadioForm.reset();
+                } catch (error) {
+                    console.error("Error adding document: ", error);
+                    const serverError = error.data?.data?.tags?.message || error.response?.message || error.message;
+                    displayMessage(addMessage, `Error: ${serverError}`, 'error');
+                } finally {
+                    setLoading(addRadioBtn, false);
+                }
+            });
+
+            // --- Initial Load ---
+            await Promise.all([
+                loadCategories(),
+                loadCities() // ✅ Load cities at the same time as categories
+            ]);
+        });
+    </script>
+</body>
+</html>

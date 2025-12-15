@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Radio Categories - Admin</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div id="adminPanel" style="display: block; width: 100%;">
+        <!-- Your menu can go here if needed -->
+        <div class="main-content" id="mainContentArea">
+            <div class="admin-header">
+                <h1>Manage Radio Categories</h1>
+            </div>
+            
+            <div class="page-container" style="display: block;">
+                <form id="addCategoryForm">
+                    <h3>Add New Category</h3>
+                    <div class="form-group">
+                        <label for="categoryTitle">Display Title</label>
+                        <input type="text" id="categoryTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryTag">Tag (unique identifier, e.g., 'news', 'sports')</label>
+                        <input type="text" id="categoryTag" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryIndex">Order Index (e.g., 1, 2, 3)</label>
+                        <input type="number" id="categoryIndex" value="10" required>
+                    </div>
+                    <button type="submit" id="addCategoryBtn">Add Category<span class="spinner"></span></button>
+                </form>
+                <div id="message" class="message"></div>
+
+                <div class="content-table-container">
+                    <h3>Existing Categories</h3>
+                    <table id="categoriesTable">
+                        <thead>
+                            <tr><th>Order</th><th>Title</th><th>Tag</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="categoriesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pb = new PocketBase('https://db.streamzonemovies.online');
+
+            const addCategoryForm = document.getElementById('addCategoryForm');
+            const addCategoryBtn = document.getElementById('addCategoryBtn');
+            const messageDiv = document.getElementById('message');
+            const tableBody = document.getElementById('categoriesTableBody');
+            const CATEGORIES_COLLECTION = 'radio_categories';
+
+            const setLoading = (button, isLoading) => {
+                const spinner = button.querySelector('.spinner');
+                button.disabled = isLoading;
+                if (spinner) spinner.style.display = isLoading ? 'inline-block' : 'none';
+            };
+            const displayMessage = (element, message, type) => {
+                element.textContent = message;
+                element.className = `message ${type}`;
+                element.style.display = 'block';
+            };
+
+            const loadCategories = async () => {
+                tableBody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+                try {
+                    const records = await pb.collection(CATEGORIES_COLLECTION).getFullList({
+                        sort: 'index',
+                    });
+
+                    if (records.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="4">No categories found.</td></tr>';
+                        return;
+                    }
+                    tableBody.innerHTML = '';
+                    records.forEach(record => {
+                        const row = `
+                            <tr>
+                                <td>${record.index}</td>
+                                <td>${record.title}</td>
+                                <td>${record.tag}</td>
+                                <td><button class="delete-btn" data-id="${record.id}"><i class="fas fa-trash-alt"></i></button></td>
+                            </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+                } catch (error) {
+                    tableBody.innerHTML = `<tr><td colspan="4" style="color:red;">Error: ${error.message}</td></tr>`;
+                }
+            };
+
+            addCategoryForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setLoading(addCategoryBtn, true);
+                const title = document.getElementById('categoryTitle').value.trim();
+                const tag = document.getElementById('categoryTag').value.trim();
+                const index = parseInt(document.getElementById('categoryIndex').value, 10);
+
+                if (!title || !tag || isNaN(index)) {
+                    displayMessage(messageDiv, 'All fields are required.', 'error');
+                    setLoading(addCategoryBtn, false);
+                    return;
+                }
+
+                const data = { title, tag, index };
+
+                try {
+                    await pb.collection(CATEGORIES_COLLECTION).create(data);
+                    displayMessage(messageDiv, 'Category added successfully!', 'success');
+                    addCategoryForm.reset();
+                    loadCategories();
+                } catch (error) {
+                    displayMessage(messageDiv, `Error: ${error.response?.message || error.message}`, 'error');
+                } finally {
+                    setLoading(addCategoryBtn, false);
+                }
+            });
+
+            tableBody.addEventListener('click', async (e) => {
+                const target = e.target.closest('.delete-btn');
+                if (target) {
+                    const recordId = target.dataset.id;
+                    if (confirm('Are you sure you want to delete this category?')) {
+                        try {
+                            await pb.collection(CATEGORIES_COLLECTION).delete(recordId);
+                            displayMessage(messageDiv, 'Category deleted.', 'success');
+                            loadCategories();
+                        } catch (error) {
+                            displayMessage(messageDiv, `Error: ${error.message}`, 'error');
+                        }
+                    }
+                }
+            });
+
+            loadCategories();
+        });
+    </script>
+</body>
+</html>

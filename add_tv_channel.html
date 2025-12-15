@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Live TV Channel - Admin</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div id="adminPanel" style="display: block; width: 100%;">
+        <div class="main-content" id="mainContentArea">
+            <div class="admin-header">
+                <h1>Add Live TV Channel</h1>
+            </div>
+            
+            <div class="page-container" style="display: block;">
+                <form id="addTvForm">
+                    <div class="form-group">
+                        <label for="channelName">Channel Name</label>
+                        <input type="text" id="channelName" placeholder="e.g., Sky Sports News" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Categories (Select all that apply)</label>
+                        <div class="checkbox-group" id="channelCategoriesCheckboxes">
+                            <!-- Checkboxes will be dynamically added -->
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="channelLogoUrl">Logo URL</label>
+                        <input type="url" id="channelLogoUrl" placeholder="https://example.com/logo.png" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="channelStreamUrl">Stream URL (M3U8 or MP4)</label>
+                        <input type="url" id="channelStreamUrl" placeholder="https://example.com/stream.m3u8" required>
+                    </div>
+                    
+                    <!-- ✅ DESCRIPTION TEXTAREA ADDED BACK -->
+                    <div class="form-group">
+                        <label for="channelDescription">Description</label>
+                        <textarea id="channelDescription" rows="4" placeholder="A short description of the channel."></textarea>
+                    </div>
+                    
+                    <button type="submit" id="addTvBtn">Add TV Channel<span class="spinner"></span></button>
+                </form>
+                <div id="addMessage" class="message"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pb = new PocketBase('https://db.streamzonemovies.online');
+
+            const TV_CATEGORIES = [
+                "All", "Sports", "News", "Movies", "Entertainment", 
+                "Kids", "Music", "Documentary", "General"
+            ];
+
+            const addTvForm = document.getElementById('addTvForm');
+            const addTvBtn = document.getElementById('addTvBtn');
+            const addMessage = document.getElementById('addMessage');
+            const checkboxesContainer = document.getElementById('channelCategoriesCheckboxes');
+
+            const setLoading = (button, isLoading) => {
+                const spinner = button.querySelector('.spinner');
+                button.disabled = isLoading;
+                if (spinner) spinner.style.display = isLoading ? 'inline-block' : 'none';
+            };
+            const displayMessage = (element, message, type) => {
+                element.textContent = message;
+                element.className = `message ${type}`;
+                element.style.display = 'block';
+            };
+
+            function populateCheckboxes() {
+                let checkboxesHTML = '';
+                TV_CATEGORIES.forEach(category => {
+                    checkboxesHTML += `
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="cat_${category}" name="channelCategory" value="${category}">
+                            <label for="cat_${category}">${category}</label>
+                        </div>
+                    `;
+                });
+                checkboxesContainer.innerHTML = checkboxesHTML;
+            }
+            
+            addTvForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setLoading(addTvBtn, true);
+                displayMessage(addMessage, '', '');
+
+                const name = document.getElementById('channelName').value.trim();
+                const logo_url = document.getElementById('channelLogoUrl').value.trim();
+                const stream_url = document.getElementById('channelStreamUrl').value.trim();
+                const description = document.getElementById('channelDescription').value.trim(); // ✅ GET DESCRIPTION
+                
+                const category = Array.from(
+                    document.querySelectorAll('#channelCategoriesCheckboxes input:checked')
+                ).map(cb => cb.value);
+
+                if (!name || !logo_url || !stream_url || category.length === 0) {
+                    displayMessage(addMessage, 'Name, Logo URL, Stream URL, and at least one Category are required.', 'error');
+                    setLoading(addTvBtn, false);
+                    return;
+                }
+
+                const data = {
+                    name,
+                    logo_url,
+                    stream_url,
+                    description, // ✅ ADD DESCRIPTION TO PAYLOAD
+                    category 
+                };
+
+                try {
+                    await pb.collection('live_tv').create(data);
+                    displayMessage(addMessage, `Channel "${name}" added successfully!`, 'success');
+                    addTvForm.reset();
+                } catch (error) {
+                    console.error("Error adding document: ", error);
+                    const serverError = error.data?.data?.category?.message || error.response?.message || error.message;
+                    displayMessage(addMessage, `Error: ${serverError}`, 'error');
+                } finally {
+                    setLoading(addTvBtn, false);
+                }
+            });
+
+            populateCheckboxes();
+        });
+    </script>
+</body>
+</html>
