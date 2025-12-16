@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Critical for Mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Movies - Admin Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
@@ -30,7 +30,7 @@
         /* --- FORMS --- */
         .form-group { margin-bottom: 1.5rem; }
         label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-weight: 500; font-size: 0.9rem; }
-        input, textarea, select { width: 100%; background-color: var(--input-bg); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; font-size: 16px; /* Prevents zoom on mobile */ }
+        input, textarea, select { width: 100%; background-color: var(--input-bg); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         input:focus { border-color: var(--accent-color); outline: none; }
         
         /* --- BUTTONS --- */
@@ -56,31 +56,41 @@
         .checkbox-label { display: flex; align-items: center; gap: 8px; background: #1a2035; padding: 6px 12px; border-radius: 50px; border: 1px solid var(--border-color); font-size: 0.85rem; cursor: pointer; user-select: none; transition: 0.2s; }
         .checkbox-label:hover { border-color: var(--accent-color); }
         .checkbox-label input { width: auto; margin: 0; accent-color: var(--accent-color); }
-        /* Style for checked state logic usually done in JS, but simple CSS active state */
         .checkbox-label:has(input:checked) { background-color: rgba(223, 255, 0, 0.15); border-color: var(--accent-color); color: var(--accent-color); }
 
         .message { padding: 15px; border-radius: 8px; margin-top: 1rem; display: none; text-align: center; font-weight: bold; }
         .message.success { background-color: rgba(39, 174, 96, 0.2); color: var(--success-color); border: 1px solid var(--success-color); }
         .message.error { background-color: rgba(231, 76, 60, 0.2); color: var(--danger-color); border: 1px solid var(--danger-color); }
 
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 2000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--card-bg); padding: 2rem; border-radius: 12px;
+            width: 90%; max-width: 400px; text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-content h3 { color: var(--accent-color); margin-top: 0; }
+        .modal-content p { color: var(--text-secondary); margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+        .btn-modal-yes { background: var(--success-color); color: white; border: none; }
+        .btn-modal-no { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
+
         /* --- 📱 MOBILE RESPONSIVENESS --- */
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            
             #mainMenu { width: 100%; height: auto; padding: 10px 0; overflow-x: auto; white-space: nowrap; display: flex; border-right: none; border-bottom: 1px solid var(--border-color); }
             #mainMenu a { display: inline-flex; padding: 10px 15px; font-size: 0.9rem; flex-direction: column; gap: 5px; text-align: center; min-width: 60px; }
-            #mainMenu i { font-size: 1.2rem; margin-bottom: 2px; }
-            
             .main-content { padding: 1rem; }
-            
             #searchView, #detailsView { padding: 1.2rem; }
-            
             #detailsHeader { flex-direction: column; align-items: center; text-align: center; }
             #displayPoster { width: 140px; }
-            
-            .btn { padding: 16px; } /* Larger touch target */
-            
-            #searchResultsContainer { grid-template-columns: repeat(2, 1fr); } /* 2 Columns on Mobile */
+            .btn { padding: 16px; } 
+            #searchResultsContainer { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -98,7 +108,6 @@
 
     <div class="main-content">
         
-        <!-- SEARCH VIEW -->
         <div id="searchView">
             <h2>Add New Movie</h2>
             <div class="form-group">
@@ -111,7 +120,6 @@
             <div id="searchResultsContainer"></div>
         </div>
 
-        <!-- DETAILS VIEW -->
         <div id="detailsView" style="display: none;">
             <div id="detailsHeader">
                 <img id="displayPoster" src="" alt="Poster">
@@ -122,7 +130,6 @@
             </div>
 
             <form id="movieForm">
-                <!-- HIDDEN FIELDS -->
                 <input type="hidden" id="recordId"> 
                 <input type="hidden" id="tmdb_id">
                 <input type="hidden" id="posterUrl">
@@ -140,55 +147,60 @@
                     <div id="vjContainer" class="checkbox-group"></div>
                 </div>
 
-                <!-- SEPARATED GENRES -->
                 <div class="form-group">
                     <label>Genres <small>(Auto-filled from TMDB)</small></label>
                     <div id="genresContainer" class="checkbox-group"></div>
                 </div>
 
-                <!-- SEPARATED TAGS -->
                 <div class="form-group">
                     <label>App Tags <small>(Home Page Sections)</small></label>
                     <div id="tagsContainer" class="checkbox-group"></div>
                 </div>
 
-                <div style="display: flex; gap: 15px; flex-direction: column-reverse; /* Stack buttons on mobile */">
+                <div style="display: flex; gap: 15px; flex-direction: column-reverse;">
                     <button type="button" class="btn btn-cancel" id="cancelBtn">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="saveBtn">Save to Database</button>
                 </div>
-                <!-- Desktop fix for buttons -->
                 <style> @media(min-width: 769px) { #movieForm div:last-child { flex-direction: row !important; } } </style>
             </form>
             <div id="formMessage" class="message"></div>
         </div>
 
     </div>
+
+    <div id="notificationModal" class="modal-overlay">
+        <div class="modal-content">
+            <i class="fas fa-bell" style="font-size: 3rem; color: var(--accent-color); margin-bottom: 1rem;"></i>
+            <h3>Movie Saved!</h3>
+            <p>Would you like to send a notification for this movie to your users now?</p>
+            <div class="modal-actions">
+                <button class="btn btn-modal-no" id="modalNoBtn">No, Later</button>
+                <button class="btn btn-modal-yes" id="modalYesBtn">Yes, Send Notification</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     const pb = new PocketBase('https://db.streamzonemovies.online');
     pb.autoCancellation(false);
     const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5"; 
 
-    const GENRE_LIST = [
-        "ACTION", "ADVENTURE", "ANIMATION", "COMEDY", "CRIME", "DOCUMENTARY", "DRAMA", 
-        "FAMILY", "FANTASY", "HISTORY", "HORROR", "KUNGU FU", "LOVE STORY", "MUSIC", 
-        "MYSTERY", "ROMANCE", "SCI FI", "SPORT", "THRILLER", "WAR", "WESTERN"
-    ];
-    
-    // Updated TAGS_LIST with all categories
-    const TAGS_LIST = [
-        "latest_uploads", "recent_movies", "most_liked", "romance", 
-        "Latest-Movies", "indian",
-        "action-thriller", "scifi-fantasy", "high-school", "animation", "horror", 
-        "comedy", "adventure", "send_notification"
-    ];
-
+    const GENRE_LIST = [ "ACTION", "ADVENTURE", "ANIMATION", "COMEDY", "CRIME", "DOCUMENTARY", "DRAMA", "FAMILY", "FANTASY", "HISTORY", "HORROR", "KUNGU FU", "LOVE STORY", "MUSIC", "MYSTERY", "ROMANCE", "SCI FI", "SPORT", "THRILLER", "WAR", "WESTERN" ];
+    const TAGS_LIST = [ "latest_uploads", "recent_movies", "most_liked", "romance", "Latest-Movies", "indian", "action-thriller", "scifi-fantasy", "high-school", "animation", "horror", "comedy", "adventure", "send_notification" ];
     const VJ_LIST = ["VJ JUNIOR", "VJ TONNY","VJ ARTIK","VJ SHIVO", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
+
+    let lastSavedRecordId = null; // Store ID for the notification redirect
 
     const searchView = document.getElementById('searchView');
     const detailsView = document.getElementById('detailsView');
     const searchResults = document.getElementById('searchResultsContainer');
     const msgEl = document.getElementById('formMessage');
     const saveBtn = document.getElementById('saveBtn');
+    
+    // Modal Elements
+    const notifModal = document.getElementById('notificationModal');
+    const modalYesBtn = document.getElementById('modalYesBtn');
+    const modalNoBtn = document.getElementById('modalNoBtn');
 
     function createCheckboxes(list, containerId, name) {
         const container = document.getElementById(containerId);
@@ -329,53 +341,64 @@
         const currentId = document.getElementById('recordId').value;
 
         try {
-            // 🛑 DUPLICATE CHECK START
+            // DUPLICATE CHECK
             if (data.tmdb_id) {
-                // 1. Find all records with this TMDB ID
-                const existingRecords = await pb.collection('media').getFullList({
-                    filter: `tmdb_id = "${data.tmdb_id}"`
-                });
-
-                // 2. Helper to compare VJ arrays (ignores order: [A,B] == [B,A])
+                const existingRecords = await pb.collection('media').getFullList({ filter: `tmdb_id = "${data.tmdb_id}"` });
                 const isSameVjs = (arr1, arr2) => {
                     const a = [...(arr1 || [])].sort();
                     const b = [...(arr2 || [])].sort();
                     return JSON.stringify(a) === JSON.stringify(b);
                 };
-
-                // 3. Check for match
                 const duplicate = existingRecords.find(r => {
-                    // If editing, skip our own record
                     if (currentId && r.id === currentId) return false;
-                    // Check if VJs match
                     return isSameVjs(r.vjs, data.vjs);
                 });
-
-                if (duplicate) {
-                    throw new Error(`DUPLICATE FOUND: This movie already exists with these exact VJs.`);
-                }
+                if (duplicate) throw new Error(`DUPLICATE FOUND: This movie already exists with these exact VJs.`);
             }
-            // 🛑 DUPLICATE CHECK END
 
             saveBtn.innerText = "Processing...";
 
+            let result;
             if (currentId) {
-                await pb.collection('media').update(currentId, data);
+                result = await pb.collection('media').update(currentId, data);
             } else {
-                await pb.collection('media').create(data);
+                result = await pb.collection('media').create(data);
             }
             
-            msgEl.textContent = "Success! Movie saved correctly.";
+            // --- SUCCESS FLOW MODIFIED FOR NOTIFICATION ---
+            lastSavedRecordId = result.id; // Store ID for redirection
+            
+            msgEl.textContent = "Success! Movie saved.";
             msgEl.className = "message success";
             msgEl.style.display = 'block';
-            setTimeout(() => window.location.href='/manage-movies.html', 1500);
-
+            
+            // Show the modal instead of redirecting immediately
+            notifModal.style.display = 'flex'; 
+            
         } catch (err) {
             msgEl.textContent = `Error: ${err.message}`;
             msgEl.className = "message error";
             msgEl.style.display = 'block';
             saveBtn.disabled = false;
             saveBtn.innerText = currentId ? "Update Movie" : "Save to Database";
+        }
+    });
+
+    // --- MODAL BUTTON HANDLERS ---
+    
+    // Option 1: No -> Just refresh/go back to movies list
+    modalNoBtn.addEventListener('click', () => {
+        window.location.href = 'manage-movies.html';
+    });
+
+    // Option 2: Yes -> Go to notifications page with the new ID
+    modalYesBtn.addEventListener('click', () => {
+        if(lastSavedRecordId) {
+            // We pass autofill_id in the URL
+            window.location.href = `manage-notifications.html?autofill_id=${lastSavedRecordId}`;
+        } else {
+            // Fallback if something weird happened
+            window.location.href = 'manage-notifications.html';
         }
     });
 
