@@ -149,6 +149,7 @@
                     <h3 id="formTitle">3. Create Banner Manually</h3>
                     <form id="bannerForm">
                         <input type="hidden" id="bannerId">
+                        <input type="hidden" id="contentPoster"> 
                         
                         <div class="form-group">
                             <label>Banner Title</label>
@@ -193,13 +194,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const bannerContainer = document.getElementById('allBannersContainer');
     const searchResults = document.getElementById('bannerSearchResults');
-    const latestResults = document.getElementById('latestContentResults'); // NEW
+    const latestResults = document.getElementById('latestContentResults');
     const formMessage = document.getElementById('formMessage');
     const viewMessage = document.getElementById('viewMessage');
-    const fetchLatestBtn = document.getElementById('fetchLatestBtn'); // NEW
-    const fetchLimitInput = document.getElementById('fetchLimit'); // NEW
+    const fetchLatestBtn = document.getElementById('fetchLatestBtn');
+    const fetchLimitInput = document.getElementById('fetchLimit');
     const menuToggleBtn = document.getElementById('menuToggleBtn');
     const mainMenu = document.getElementById('mainMenu');
+
+    // Form Fields
+    const bannerIdInput = document.getElementById('bannerId');
+    const bannerTitleInput = document.getElementById('bannerTitle');
+    const bannerImageInput = document.getElementById('bannerImage');
+    const bannerDescriptionInput = document.getElementById('bannerDescription');
+    const bannerLinkInput = document.getElementById('bannerLink');
+    const contentPosterInput = document.getElementById('contentPoster'); // NEW POSTER FIELD
 
     if (menuToggleBtn) {
         menuToggleBtn.addEventListener('click', () => mainMenu.classList.toggle('open'));
@@ -244,10 +253,14 @@ document.addEventListener('DOMContentLoaded', () => {
             records.forEach(banner => {
                 const card = document.createElement('div');
                 card.className = 'banner-card';
+                
+                // Check if the 'poster' field exists on the fetched banner record (optional)
+                const posterInfo = banner.poster ? ` | Poster: <a href="${banner.poster}" target="_blank">View</a>` : ''; 
+
                 card.innerHTML = `
                     <img src="${banner.image}" alt="${banner.title}">
                     <h3>${banner.title}</h3>
-                    <p style="font-size:0.8rem; color:#ccc; word-break: break-all;">Linked ID: ${banner.link}</p>
+                    <p style="font-size:0.8rem; color:#ccc; word-break: break-all;">Linked ID: ${banner.link} ${posterInfo}</p>
                     <div style="margin-top:10px; display:flex; gap:10px;">
                         <button class="action-btn edit" data-id="${banner.id}">Edit</button>
                         <button class="action-btn delete" data-id="${banner.id}">Delete</button>
@@ -276,11 +289,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (btn.classList.contains('edit')) {
             const banner = await pb.collection('banners').getOne(id);
-            document.getElementById('bannerId').value = banner.id;
-            document.getElementById('bannerTitle').value = banner.title;
-            document.getElementById('bannerImage').value = banner.image;
-            document.getElementById('bannerDescription').value = banner.description;
-            document.getElementById('bannerLink').value = banner.link;
+            bannerIdInput.value = banner.id;
+            bannerTitleInput.value = banner.title;
+            bannerImageInput.value = banner.image;
+            bannerDescriptionInput.value = banner.description;
+            bannerLinkInput.value = banner.link;
+            
+            // Populate the new hidden field (will only work if the field exists on the banner record)
+            contentPosterInput.value = banner.poster || ''; 
             
             document.getElementById('formTitle').textContent = "Edit Banner";
             document.getElementById('saveBtn').textContent = "Update Banner";
@@ -290,17 +306,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // --- 2. LATEST CONTENT FETCHING LOGIC (NEW FEATURE) ---
+    // --- 2. LATEST CONTENT FETCHING LOGIC ---
     fetchLatestBtn.addEventListener('click', async () => {
         const limit = parseInt(fetchLimitInput.value) || 6;
         setLoading(fetchLatestBtn, true, 'Fetch Latest');
         latestResults.innerHTML = '<p style="color:var(--text-secondary);">Fetching latest content...</p>';
         
         try {
-            // Fetch content sorted by creation date, limit by user input
             const result = await pb.collection('media').getList(1, limit, {
                 sort: '-created',
-                filter: 'backdrop != ""' // Only show content with a backdrop suitable for a banner
+                filter: 'backdrop != ""'
             });
 
             latestResults.innerHTML = '';
@@ -309,7 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Check existing banners to prevent duplicates
             const existingBanners = await pb.collection('banners').getFullList();
             const existingLinks = new Set(existingBanners.map(b => b.link));
 
@@ -318,14 +332,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const card = document.createElement('div');
                 card.className = 'latest-content-item';
+                
+                const posterUrl = item.poster || ''; // Capture poster URL
+                const backdropUrl = item.backdrop || posterUrl;
+
                 card.innerHTML = `
-                    <img src="${item.poster || 'https://placehold.co/50'}">
+                    <img src="${posterUrl || 'https://placehold.co/50'}">
                     <div class="result-info" style="flex-grow:1;">
                         <h3>${item.title}</h3>
                         <p style="font-size:0.8rem; color:#aaa;">${item.contentType.toUpperCase()} / VJ: ${(item.vjs || []).join(', ')}</p>
                         ${isDuplicate 
                             ? `<button class="select-btn" disabled style="background:#555; color:#ccc;">Already Banner</button>`
-                            : `<button class="add-banner-btn" type="button" data-id="${item.id}" data-title="${item.title}" data-image="${item.backdrop || item.poster || ''}" data-desc="${item.description || ''}">Add Banner</button>`
+                            : `<button class="add-banner-btn" type="button" 
+                                data-id="${item.id}" 
+                                data-title="${item.title}" 
+                                data-image="${backdropUrl}" 
+                                data-desc="${item.description || ''}"
+                                data-poster="${posterUrl}"
+                                >Add Banner</button>`
                         }
                     </div>
                 `;
@@ -348,26 +372,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemTitle = btn.dataset.title;
         const itemImage = btn.dataset.image;
         const itemDesc = btn.dataset.desc;
+        const itemPoster = btn.dataset.poster; // GET POSTER
 
         setLoading(btn, true, 'Adding...');
 
+        // Prepare data including the poster link
         const data = {
             title: itemTitle,
             image: itemImage,
             description: itemDesc,
-            link: itemId // Use the content ID as the link
+            link: itemId,
+            // Only include 'poster' if your 'banners' collection has a field named 'poster'
+            // If your banners collection does NOT have a 'poster' field, remove the next line.
+            poster: itemPoster 
         };
 
         try {
             await pb.collection('banners').create(data);
             showMessage(formMessage, `Banner for "${itemTitle}" added successfully!`, 'success');
             
-            // Disable the specific button and update text
             btn.disabled = true;
             btn.textContent = "Added!";
             btn.style.background = '#27ae60';
             
-            // Also refresh the main banner view in case the user switches tabs
             loadBanners();
 
         } catch (err) {
@@ -385,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchResults.innerHTML = '<p style="color:var(--text-secondary);">Searching...</p>';
         try {
             const result = await pb.collection('media').getList(1, 10, {
-                filter: `title ~ "${query}" || vjs ~ "${query}"` // Search by title OR VJ name
+                filter: `title ~ "${query}" || vjs ~ "${query}"`
             });
 
             searchResults.innerHTML = '';
@@ -406,11 +433,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 card.querySelector('.select-btn').addEventListener('click', () => {
-                    document.getElementById('bannerTitle').value = item.title;
-                    // Prefer backdrop, fall back to poster
-                    document.getElementById('bannerImage').value = item.backdrop || item.poster || ''; 
-                    document.getElementById('bannerDescription').value = item.description || '';
-                    document.getElementById('bannerLink').value = item.id;
+                    bannerTitleInput.value = item.title;
+                    // Prefer backdrop, fall back to poster for banner image
+                    bannerImageInput.value = item.backdrop || item.poster || ''; 
+                    bannerDescriptionInput.value = item.description || '';
+                    bannerLinkInput.value = item.id;
+                    contentPosterInput.value = item.poster || ''; // SET POSTER
                     
                     searchResults.innerHTML = ''; 
                     showMessage(formMessage, "Form auto-filled from selection!", "info");
@@ -429,14 +457,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('saveBtn');
         setLoading(btn, true, btn.dataset.originalText || 'Save Banner');
 
-        const id = document.getElementById('bannerId').value;
+        const id = bannerIdInput.value;
         const data = {
-            title: document.getElementById('bannerTitle').value,
-            image: document.getElementById('bannerImage').value,
-            description: document.getElementById('bannerDescription').value,
-            link: document.getElementById('bannerLink').value
+            title: bannerTitleInput.value,
+            image: bannerImageInput.value,
+            description: bannerDescriptionInput.value,
+            link: bannerLinkInput.value,
+            // Include the poster field. REMOVE this line if your 'banners' collection does not have a 'poster' field.
+            poster: contentPosterInput.value 
         };
-        btn.dataset.originalText = id ? "Update Banner" : "Save Banner"; // Store original text
+        btn.dataset.originalText = id ? "Update Banner" : "Save Banner";
 
         try {
             if (id) {
@@ -460,13 +490,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 5. FORM RESET/CANCEL ---
     function resetForm() {
         document.getElementById('bannerForm').reset();
-        document.getElementById('bannerId').value = "";
+        bannerIdInput.value = "";
+        contentPosterInput.value = ""; // Clear the hidden poster field
         document.getElementById('formTitle').textContent = "3. Create Banner Manually";
         document.getElementById('saveBtn').textContent = "Save Banner";
         document.getElementById('saveBtn').disabled = false;
         formMessage.style.display = 'none';
         searchResults.innerHTML = '';
-        latestResults.innerHTML = ''; // Clear latest results on reset
+        latestResults.innerHTML = '';
     }
 
     document.getElementById('cancelBtn').addEventListener('click', resetForm);
