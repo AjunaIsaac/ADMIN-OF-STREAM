@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Search - Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
+    <style>
+        :root {
+            --primary-bg: #0A0F2A; --card-bg: #1C2141; --accent-color: #DFFF00;
+            --text-primary: #FFFFFF; --text-secondary: #a9a9b3;
+            --warn-color: #f39c12; --danger-color: #f44336;
+        }
+        body { background-color: var(--primary-bg); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; }
+        #adminPanel { display: flex; min-height: 100vh; }
+        
+        /* --- Sidebar (Same as before) --- */
+        #mainMenu { width: 250px; flex-shrink: 0; background-color: #111533; transition: transform 0.3s ease; z-index: 1000; }
+        #mainMenu a { padding: 15px 20px; text-decoration: none; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 15px; }
+        #mainMenu a:hover { background-color: rgba(255,255,255,0.05); }
+        .menu-header { color: var(--accent-color); padding: 10px 20px; font-size: 1.5em; text-align: center; margin-bottom: 20px; }
+        
+        /* --- Main Content --- */
+        .main-content { flex-grow: 1; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+        .header-area { margin-bottom: 30px; }
+        .header-area h1 { color: var(--accent-color); margin: 0; }
+        
+        /* --- Search Bar Styling --- */
+        .search-wrapper { position: relative; margin-bottom: 30px; }
+        .search-wrapper i { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 1.2rem; }
+        #searchInput {
+            width: 100%;
+            padding: 20px 20px 20px 55px;
+            font-size: 1.2rem;
+            background-color: var(--card-bg);
+            border: 2px solid #33395b;
+            border-radius: 12px;
+            color: white;
+            outline: none;
+            transition: 0.3s;
+            box-sizing: border-box;
+        }
+        #searchInput:focus { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(223, 255, 0, 0.1); }
+
+        /* --- Results List Styling --- */
+        #resultsContainer { display: flex; flex-direction: column; gap: 10px; }
+        
+        .result-item {
+            display: flex;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #33395b;
+            transition: transform 0.2s;
+        }
+        .result-item:hover { transform: translateX(5px); border-color: var(--accent-color); }
+        
+        .thumb { width: 60px; height: 80px; object-fit: cover; border-radius: 4px; margin-right: 15px; background: #000; }
+        
+        .info { flex-grow: 1; }
+        .info h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: white; }
+        .info .meta { font-size: 0.9rem; color: var(--text-secondary); display: flex; gap: 15px; }
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .badge.movie { background: #3498db; color: white; }
+        .badge.tv { background: #9b59b6; color: white; }
+        
+        .actions { display: flex; gap: 10px; padding-left: 15px; }
+        .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        .btn:hover { opacity: 0.8; }
+        .edit-btn { background-color: var(--warn-color); }
+        .del-btn { background-color: var(--danger-color); }
+
+        /* --- Loading / Empty States --- */
+        .status-msg { text-align: center; color: var(--text-secondary); margin-top: 50px; font-size: 1.1rem; }
+        
+        /* --- Mobile Toggle --- */
+        #menuToggleBtn { display: none; }
+        @media (max-width: 768px) {
+            #menuToggleBtn { display: flex; position: fixed; top: 15px; left: 15px; z-index: 1001; background: var(--card-bg); border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 5px; width: 40px; height: 40px; align-items: center; justify-content: center; }
+            #mainMenu { position: fixed; transform: translateX(-100%); height: 100%; }
+            #mainMenu.open { transform: translateX(0); }
+            .main-content { padding: 80px 1rem 1rem 1rem; }
+            .result-item { flex-direction: column; text-align: center; padding: 20px; }
+            .thumb { width: 100px; height: 150px; margin: 0 0 15px 0; }
+            .info { margin-bottom: 15px; }
+            .info .meta { justify-content: center; }
+            .actions { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div id="adminPanel">
+        <nav id="mainMenu">
+            <div class="menu-header">Admin Menu</div>
+            <a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <hr style="border-color: #333; margin: 10px 0;">
+            <a href="search-content.html" style="background-color: var(--accent-color); color: var(--primary-bg); font-weight:bold;"><i class="fas fa-search"></i> Quick Search</a>
+            <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All</a>
+            <a href="manage-movies.html"><i class="fas fa-film"></i> Manage Movies</a>
+            <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
+        </nav>
+
+        <div class="main-content">
+            <button id="menuToggleBtn"><i class="fas fa-bars"></i></button>
+            
+            <div class="header-area">
+                <h1>Find & Manage Content</h1>
+                <p style="color:var(--text-secondary)">Type a title below to instantly edit or delete it.</p>
+            </div>
+
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search by title (e.g., 'Avengers', 'Breaking Bad')..." autocomplete="off" autofocus>
+            </div>
+
+            <div id="resultsContainer">
+                <div class="status-msg">
+                    <i class="fas fa-keyboard" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i><br>
+                    Start typing to search...
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const pb = new PocketBase('https://db.streamzonemovies.online');
+    pb.autoCancellation(true); // Auto-cancel old requests if typing fast
+
+    const searchInput = document.getElementById('searchInput');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const menuToggleBtn = document.getElementById('menuToggleBtn');
+    const mainMenu = document.getElementById('mainMenu');
+
+    // Mobile Menu Toggle
+    if (menuToggleBtn) menuToggleBtn.addEventListener('click', () => mainMenu.classList.toggle('open'));
+
+    // Debounce Function (Waits for you to stop typing before searching)
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    // The Search Logic
+    const performSearch = async (term) => {
+        if (!term || term.trim() === '') {
+            resultsContainer.innerHTML = `
+                <div class="status-msg">
+                    <i class="fas fa-keyboard" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i><br>
+                    Start typing to search...
+                </div>`;
+            return;
+        }
+
+        resultsContainer.innerHTML = '<div class="status-msg"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+
+        try {
+            // Search media collection where Title contains the term
+            const result = await pb.collection('media').getList(1, 50, {
+                filter: `title ~ "${term}"`,
+                sort: '-created'
+            });
+
+            if (result.items.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="status-msg">
+                        <i class="fas fa-search-minus" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i><br>
+                        No content found matching "${term}"
+                    </div>`;
+                return;
+            }
+
+            // Render Results
+            resultsContainer.innerHTML = '';
+            result.items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'result-item';
+                
+                // Determine VJ Name
+                let vjName = (item.vjs && item.vjs.length > 0) ? item.vjs[0] : 'No VJ';
+                if(typeof item.vjs === 'string') vjName = item.vjs;
+
+                // Determine Badge Class
+                const badgeClass = item.contentType === 'tv' ? 'tv' : 'movie';
+                const badgeText = item.contentType === 'tv' ? 'TV SERIES' : 'MOVIE';
+
+                el.innerHTML = `
+                    <img src="${item.poster || 'https://placehold.co/100x150'}" class="thumb" alt="poster">
+                    <div class="info">
+                        <h3>${item.title}</h3>
+                        <div class="meta">
+                            <span class="badge ${badgeClass}">${badgeText}</span>
+                            <span><i class="fas fa-microphone"></i> ${vjName}</span>
+                            <span><i class="fas fa-calendar"></i> ${new Date(item.created).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn edit-btn" onclick="editItem('${item.id}', '${item.contentType}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn del-btn" onclick="deleteItem('${item.id}', this)">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `;
+                resultsContainer.appendChild(el);
+            });
+
+        } catch (err) {
+            console.error(err);
+            resultsContainer.innerHTML = `<div class="status-msg" style="color:var(--danger-color)">Error: ${err.message}</div>`;
+        }
+    };
+
+    // Attach Search with Debounce (300ms delay)
+    searchInput.addEventListener('input', debounce((e) => {
+        performSearch(e.target.value);
+    }, 300));
+
+    // --- Action Functions ---
+
+    window.editItem = (id, type) => {
+        if (type === 'tv') {
+            window.location.href = `manage-series.html?id=${id}`;
+        } else {
+            window.location.href = `manage-movies.html?id=${id}`;
+        }
+    };
+
+    window.deleteItem = async (id, btnElement) => {
+        if (!confirm('Are you strictly sure you want to DELETE this content? This cannot be undone.')) return;
+        
+        // Change button text to show processing
+        const originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btnElement.disabled = true;
+
+        try {
+            await pb.collection('media').delete(id);
+            // Remove the row with animation
+            const row = btnElement.closest('.result-item');
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(50px)';
+            setTimeout(() => row.remove(), 300);
+        } catch (err) {
+            alert('Error deleting: ' + err.message);
+            btnElement.innerHTML = originalText;
+            btnElement.disabled = false;
+        }
+    };
+
+</script>
+</body>
+</html>
