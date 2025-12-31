@@ -6,7 +6,6 @@
     <title>Manage Banners - Admin Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- PocketBase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
 
     <style>
@@ -15,6 +14,7 @@
             --primary-bg: #0A0F2A; --card-bg: #1C2141; --accent-color: #DFFF00;
             --text-primary: #FFFFFF; --text-secondary: #a9a9b3; --logout-bg: #e74c3c;
             --input-bg: #0A0F2A; --danger-color: #e74c3c;
+            --info-color: #2196F3;
         }
 
         body { background-color: var(--primary-bg); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; }
@@ -59,21 +59,31 @@
         .edit { background-color: var(--accent-color); color: black; }
         .delete { background-color: var(--danger-color); color: white; }
 
-        /* Search Results */
-        #bannerSearchResults { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
-        .result-card { background: var(--primary-bg); padding: 10px; border-radius: 8px; display: flex; gap: 10px; border: 1px solid #444; }
-        .result-card img { width: 60px; height: 90px; object-fit: cover; border-radius: 4px; }
-        .result-info h3 { margin: 0; font-size: 1rem; }
-        .select-btn { margin-top: 5px; background: var(--accent-color); border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        /* Search Results & Latest Content Results */
+        #bannerSearchResults, #latestContentResults { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+        .result-card, .latest-content-item { 
+            background: var(--primary-bg); padding: 10px; border-radius: 8px; 
+            display: flex; gap: 10px; border: 1px solid #444; 
+        }
+        .result-card img, .latest-content-item img { width: 60px; height: 90px; object-fit: cover; border-radius: 4px; }
+        .result-info h3, .latest-content-item h3 { margin: 0; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .select-btn, .add-banner-btn { margin-top: 5px; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .select-btn { background: var(--accent-color); color: black; }
+        .add-banner-btn { background: var(--info-color); color: white; }
 
-        .message { padding: 15px; border-radius: 8px; margin-top: 1rem; display: none; text-align: center; }
-        .message.success { background-color: #27ae60; }
-        .message.error { background-color: var(--danger-color); }
+
+        .message { padding: 15px; border-radius: 8px; margin-top: 1rem; display: none; text-align: center; font-weight: bold; }
+        .message.success { background-color: #27ae60; color: white; }
+        .message.error { background-color: var(--danger-color); color: white; }
+        .message.info { background-color: var(--info-color); color: white; }
+
 
         @media (max-width: 768px) {
             #mainMenu { position: fixed; left: -250px; }
             #menuToggleBtn { display: block; }
             .admin-header h1 { font-size: 1.8rem; }
+            .banner-nav-tabs { flex-wrap: wrap; }
+            #bannerSearchResults, #latestContentResults { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -82,11 +92,11 @@
     <div id="adminPanel">
        <nav id="mainMenu">
             <div class="menu-header">Admin Menu</div>
-            <a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
             <hr style="border-color: #333; margin: 10px 0;">
             <a href="manage-movies.html"><i class="fas fa-film"></i> Manage Movies</a>
             <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
-            <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
+            <a href="manage-banners.html" class="active"><i class="fas fa-images"></i> Manage Banners</a>
             <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
             <a href="https://admin.streamzonemovies.online/user_management"><i class="fas fa-users-cog"></i> User Management</a>
             <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
@@ -103,25 +113,32 @@
             </div>
 
             <div class="page-container">
-                <!-- Tabs -->
                 <div class="banner-nav-tabs">
                     <button class="banner-tab-link active" id="viewTabBtn">View All Banners</button>
                     <button class="banner-tab-link" id="addTabBtn">Add / Edit Banner</button>
                 </div>
 
-                <!-- VIEW BANNERS TAB -->
                 <div id="viewBannersTab">
                     <h2>Active Banners</h2>
                     <div id="allBannersContainer"></div>
                     <div id="viewMessage" class="message"></div>
                 </div>
 
-                <!-- ADD/EDIT BANNER TAB -->
                 <div id="addBannerTab" style="display: none;">
                     
+                    <div id="latestContentFetcher" style="background: #111533; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3 style="margin-top:0; color: var(--accent-color);">1. Latest Content Auto-Add</h3>
+                        <p style="color:#aaa; font-size:0.9rem;">Fetch the newest content to quickly create banners.</p>
+                        <div style="display:flex; gap:10px; align-items: center;">
+                            <label for="fetchLimit" style="margin-bottom:0; width: auto; flex-shrink: 0;">Limit:</label>
+                            <input type="number" id="fetchLimit" value="6" min="1" max="50" style="width: 80px; flex-shrink: 0;">
+                            <button id="fetchLatestBtn" class="btn btn-search" style="width: auto;">Fetch Latest</button>
+                        </div>
+                        <div id="latestContentResults"></div>
+                    </div>
                     <div style="background: var(--primary-bg); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                        <h3 style="margin-top:0;">1. Find Content (Optional)</h3>
-                        <p style="color:#aaa; font-size:0.9rem;">Search your Movies/Series to auto-fill the banner.</p>
+                        <h3 style="margin-top:0;">2. Search & Auto-Fill</h3>
+                        <p style="color:#aaa; font-size:0.9rem;">Search your Movies/Series to auto-fill the banner form.</p>
                         <div style="display:flex; gap:10px;">
                             <input type="text" id="bannerSearchQuery" placeholder="Search title...">
                             <button id="bannerSearchBtn" class="btn btn-search">Search</button>
@@ -129,9 +146,10 @@
                         <div id="bannerSearchResults"></div>
                     </div>
 
-                    <h3 id="formTitle">2. Create Banner</h3>
+                    <h3 id="formTitle">3. Create Banner Manually</h3>
                     <form id="bannerForm">
                         <input type="hidden" id="bannerId">
+                        <input type="hidden" id="contentPoster"> 
                         
                         <div class="form-group">
                             <label>Banner Title</label>
@@ -139,7 +157,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>Image</label>
+                            <label>Image (Backdrop URL Preferred)</label>
                             <input type="url" id="bannerImage" required>
                         </div>
                         
@@ -176,9 +194,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const bannerContainer = document.getElementById('allBannersContainer');
     const searchResults = document.getElementById('bannerSearchResults');
+    const latestResults = document.getElementById('latestContentResults');
     const formMessage = document.getElementById('formMessage');
+    const viewMessage = document.getElementById('viewMessage');
+    const fetchLatestBtn = document.getElementById('fetchLatestBtn');
+    const fetchLimitInput = document.getElementById('fetchLimit');
     const menuToggleBtn = document.getElementById('menuToggleBtn');
     const mainMenu = document.getElementById('mainMenu');
+
+    // Form Fields
+    const bannerIdInput = document.getElementById('bannerId');
+    const bannerTitleInput = document.getElementById('bannerTitle');
+    const bannerImageInput = document.getElementById('bannerImage');
+    const bannerDescriptionInput = document.getElementById('bannerDescription');
+    const bannerLinkInput = document.getElementById('bannerLink');
+    const contentPosterInput = document.getElementById('contentPoster'); // NEW POSTER FIELD
 
     if (menuToggleBtn) {
         menuToggleBtn.addEventListener('click', () => mainMenu.classList.toggle('open'));
@@ -196,13 +226,26 @@ document.addEventListener('DOMContentLoaded', () => {
         resetForm();
     });
 
+    // --- UTILITIES ---
+    const showMessage = (el, text, type) => {
+        el.textContent = text;
+        el.className = `message ${type}`;
+        el.style.display = 'block';
+    }
+    const setLoading = (btn, isLoading, originalText) => {
+        btn.disabled = isLoading;
+        btn.textContent = isLoading ? "Processing..." : originalText;
+    };
+    
+    // --- 1. BANNER VIEW/EDIT/DELETE ---
     async function loadBanners() {
-        bannerContainer.innerHTML = '<p>Loading...</p>';
+        bannerContainer.innerHTML = '<p style="color:var(--text-secondary);">Loading...</p>';
+        viewMessage.style.display = 'none';
         try {
             const records = await pb.collection('banners').getFullList({ sort: '-created' });
             
             if (records.length === 0) {
-                bannerContainer.innerHTML = '<p>No banners found.</p>';
+                bannerContainer.innerHTML = '<p style="color:var(--text-secondary);">No banners found.</p>';
                 return;
             }
 
@@ -210,10 +253,14 @@ document.addEventListener('DOMContentLoaded', () => {
             records.forEach(banner => {
                 const card = document.createElement('div');
                 card.className = 'banner-card';
+                
+                // Check if the 'poster' field exists on the fetched banner record (optional)
+                const posterInfo = banner.poster ? ` | Poster: <a href="${banner.poster}" target="_blank">View</a>` : ''; 
+
                 card.innerHTML = `
                     <img src="${banner.image}" alt="${banner.title}">
                     <h3>${banner.title}</h3>
-                    <p style="font-size:0.8rem; color:#ccc;">Linked ID: ${banner.link}</p>
+                    <p style="font-size:0.8rem; color:#ccc; word-break: break-all;">Linked ID: ${banner.link} ${posterInfo}</p>
                     <div style="margin-top:10px; display:flex; gap:10px;">
                         <button class="action-btn edit" data-id="${banner.id}">Edit</button>
                         <button class="action-btn delete" data-id="${banner.id}">Delete</button>
@@ -222,94 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 bannerContainer.appendChild(card);
             });
         } catch (err) {
-            bannerContainer.innerHTML = `<p style="color:red">Error: ${err.message}</p>`;
+            showMessage(viewMessage, `Error loading banners: ${err.message}`, 'error');
+            bannerContainer.innerHTML = '';
         }
     }
-
-    document.getElementById('bannerSearchBtn').addEventListener('click', async () => {
-        const query = document.getElementById('bannerSearchQuery').value;
-        if (!query) return;
-
-        searchResults.innerHTML = '<p>Searching...</p>';
-        try {
-            const result = await pb.collection('media').getList(1, 10, {
-                filter: `title ~ "${query}"`
-            });
-
-            searchResults.innerHTML = '';
-            if (result.items.length === 0) {
-                searchResults.innerHTML = '<p>No content found.</p>';
-                return;
-            }
-
-            result.items.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'result-card';
-                card.innerHTML = `
-                    <img src="${item.poster || 'https://placehold.co/50'}">
-                    <div class="result-info">
-                        <h3>${item.title}</h3>
-                        <p style="font-size:0.8rem; color:#aaa;">${item.contentType}</p>
-                        <button class="select-btn" type="button">Select</button>
-                    </div>
-                `;
-                card.querySelector('.select-btn').addEventListener('click', () => {
-                    document.getElementById('bannerTitle').value = item.title;
-                    document.getElementById('bannerImage').value = item.backdrop || item.poster || '';
-                    document.getElementById('bannerDescription').value = item.description || '';
-                    
-                    // ✅ *** KEY CHANGE HERE ***
-                    // We now save ONLY the item's ID. This is what the app needs.
-                    document.getElementById('bannerLink').value = item.id;
-                    
-                    searchResults.innerHTML = ''; 
-                    formMessage.textContent = "Auto-filled from selection!";
-                    formMessage.className = "message success";
-                    formMessage.style.display = "block";
-                });
-                searchResults.appendChild(card);
-            });
-
-        } catch (err) {
-            searchResults.innerHTML = `<p style="color:red">Error: ${err.message}</p>`;
-        }
-    });
-
-    document.getElementById('bannerForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('saveBtn');
-        btn.disabled = true; btn.innerText = "Saving...";
-
-        const id = document.getElementById('bannerId').value;
-        const data = {
-            title: document.getElementById('bannerTitle').value,
-            image: document.getElementById('bannerImage').value,
-            description: document.getElementById('bannerDescription').value,
-            link: document.getElementById('bannerLink').value
-        };
-
-        try {
-            if (id) {
-                await pb.collection('banners').update(id, data);
-            } else {
-                await pb.collection('banners').create(data);
-            }
-            formMessage.textContent = "Banner Saved Successfully!";
-            formMessage.className = "message success";
-            formMessage.style.display = 'block';
-            
-            setTimeout(() => {
-                resetForm();
-                viewBtn.click(); 
-            }, 1000);
-
-        } catch (err) {
-            formMessage.textContent = `Error: ${err.message}`;
-            formMessage.className = "message error";
-            formMessage.style.display = 'block';
-            btn.disabled = false;
-        }
-    });
 
     bannerContainer.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
@@ -326,11 +289,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (btn.classList.contains('edit')) {
             const banner = await pb.collection('banners').getOne(id);
-            document.getElementById('bannerId').value = banner.id;
-            document.getElementById('bannerTitle').value = banner.title;
-            document.getElementById('bannerImage').value = banner.image;
-            document.getElementById('bannerDescription').value = banner.description;
-            document.getElementById('bannerLink').value = banner.link;
+            bannerIdInput.value = banner.id;
+            bannerTitleInput.value = banner.title;
+            bannerImageInput.value = banner.image;
+            bannerDescriptionInput.value = banner.description;
+            bannerLinkInput.value = banner.link;
+            
+            // Populate the new hidden field (will only work if the field exists on the banner record)
+            contentPosterInput.value = banner.poster || ''; 
             
             document.getElementById('formTitle').textContent = "Edit Banner";
             document.getElementById('saveBtn').textContent = "Update Banner";
@@ -339,18 +305,204 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+
+    // --- 2. LATEST CONTENT FETCHING LOGIC ---
+    fetchLatestBtn.addEventListener('click', async () => {
+        const limit = parseInt(fetchLimitInput.value) || 6;
+        setLoading(fetchLatestBtn, true, 'Fetch Latest');
+        latestResults.innerHTML = '<p style="color:var(--text-secondary);">Fetching latest content...</p>';
+        
+        try {
+            const result = await pb.collection('media').getList(1, limit, {
+                sort: '-created',
+                filter: 'backdrop != ""'
+            });
+
+            latestResults.innerHTML = '';
+            if (result.items.length === 0) {
+                latestResults.innerHTML = '<p style="color:var(--text-secondary);">No recent content found with suitable backdrop.</p>';
+                return;
+            }
+
+            const existingBanners = await pb.collection('banners').getFullList();
+            const existingLinks = new Set(existingBanners.map(b => b.link));
+
+            result.items.forEach(item => {
+                const isDuplicate = existingLinks.has(item.id);
+                
+                const card = document.createElement('div');
+                card.className = 'latest-content-item';
+                
+                const posterUrl = item.poster || ''; // Capture poster URL
+                const backdropUrl = item.backdrop || posterUrl;
+
+                card.innerHTML = `
+                    <img src="${posterUrl || 'https://placehold.co/50'}">
+                    <div class="result-info" style="flex-grow:1;">
+                        <h3>${item.title}</h3>
+                        <p style="font-size:0.8rem; color:#aaa;">${item.contentType.toUpperCase()} / VJ: ${(item.vjs || []).join(', ')}</p>
+                        ${isDuplicate 
+                            ? `<button class="select-btn" disabled style="background:#555; color:#ccc;">Already Banner</button>`
+                            : `<button class="add-banner-btn" type="button" 
+                                data-id="${item.id}" 
+                                data-title="${item.title}" 
+                                data-image="${backdropUrl}" 
+                                data-desc="${item.description || ''}"
+                                data-poster="${posterUrl}"
+                                >Add Banner</button>`
+                        }
+                    </div>
+                `;
+                latestResults.appendChild(card);
+            });
+
+        } catch (err) {
+            latestResults.innerHTML = `<p style="color:red">Error fetching latest content: ${err.message}</p>`;
+        } finally {
+            setLoading(fetchLatestBtn, false, 'Fetch Latest');
+        }
+    });
+
+    // Handle click on "Add Banner" button from the latest content list
+    latestResults.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.add-banner-btn');
+        if (!btn) return;
+        
+        const itemId = btn.dataset.id;
+        const itemTitle = btn.dataset.title;
+        const itemImage = btn.dataset.image;
+        const itemDesc = btn.dataset.desc;
+        const itemPoster = btn.dataset.poster; // GET POSTER
+
+        setLoading(btn, true, 'Adding...');
+
+        // Prepare data including the poster link
+        const data = {
+            title: itemTitle,
+            image: itemImage,
+            description: itemDesc,
+            link: itemId,
+            // Only include 'poster' if your 'banners' collection has a field named 'poster'
+            // If your banners collection does NOT have a 'poster' field, remove the next line.
+            poster: itemPoster 
+        };
+
+        try {
+            await pb.collection('banners').create(data);
+            showMessage(formMessage, `Banner for "${itemTitle}" added successfully!`, 'success');
+            
+            btn.disabled = true;
+            btn.textContent = "Added!";
+            btn.style.background = '#27ae60';
+            
+            loadBanners();
+
+        } catch (err) {
+            showMessage(formMessage, `Failed to add banner: ${err.message}`, 'error');
+            setLoading(btn, false, 'Add Banner');
+        }
+    });
+
+
+    // --- 3. MANUAL SEARCH & AUTO-FILL ---
+    document.getElementById('bannerSearchBtn').addEventListener('click', async () => {
+        const query = document.getElementById('bannerSearchQuery').value;
+        if (!query) return;
+
+        searchResults.innerHTML = '<p style="color:var(--text-secondary);">Searching...</p>';
+        try {
+            const result = await pb.collection('media').getList(1, 10, {
+                filter: `title ~ "${query}" || vjs ~ "${query}"`
+            });
+
+            searchResults.innerHTML = '';
+            if (result.items.length === 0) {
+                searchResults.innerHTML = '<p style="color:var(--text-secondary);">No content found.</p>';
+                return;
+            }
+
+            result.items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.innerHTML = `
+                    <img src="${item.poster || 'https://placehold.co/50'}">
+                    <div class="result-info">
+                        <h3>${item.title}</h3>
+                        <p style="font-size:0.8rem; color:#aaa;">${item.contentType.toUpperCase()} / VJ: ${(item.vjs || []).join(', ')}</p>
+                        <button class="select-btn" type="button">Select</button>
+                    </div>
+                `;
+                card.querySelector('.select-btn').addEventListener('click', () => {
+                    bannerTitleInput.value = item.title;
+                    // Prefer backdrop, fall back to poster for banner image
+                    bannerImageInput.value = item.backdrop || item.poster || ''; 
+                    bannerDescriptionInput.value = item.description || '';
+                    bannerLinkInput.value = item.id;
+                    contentPosterInput.value = item.poster || ''; // SET POSTER
+                    
+                    searchResults.innerHTML = ''; 
+                    showMessage(formMessage, "Form auto-filled from selection!", "info");
+                });
+                searchResults.appendChild(card);
+            });
+
+        } catch (err) {
+            showMessage(formMessage, `Error during search: ${err.message}`, 'error');
+        }
+    });
+
+    // --- 4. MANUAL FORM SUBMISSION (CREATE/UPDATE) ---
+    document.getElementById('bannerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('saveBtn');
+        setLoading(btn, true, btn.dataset.originalText || 'Save Banner');
+
+        const id = bannerIdInput.value;
+        const data = {
+            title: bannerTitleInput.value,
+            image: bannerImageInput.value,
+            description: bannerDescriptionInput.value,
+            link: bannerLinkInput.value,
+            // Include the poster field. REMOVE this line if your 'banners' collection does not have a 'poster' field.
+            poster: contentPosterInput.value 
+        };
+        btn.dataset.originalText = id ? "Update Banner" : "Save Banner";
+
+        try {
+            if (id) {
+                await pb.collection('banners').update(id, data);
+            } else {
+                await pb.collection('banners').create(data);
+            }
+            showMessage(formMessage, "Banner Saved Successfully!", 'success');
+            
+            setTimeout(() => {
+                resetForm();
+                viewBtn.click(); 
+            }, 1000);
+
+        } catch (err) {
+            showMessage(formMessage, `Error: ${err.message}`, 'error');
+            setLoading(btn, false, btn.dataset.originalText);
+        }
+    });
+
+    // --- 5. FORM RESET/CANCEL ---
     function resetForm() {
         document.getElementById('bannerForm').reset();
-        document.getElementById('bannerId').value = "";
-        document.getElementById('formTitle').textContent = "2. Create Banner";
+        bannerIdInput.value = "";
+        contentPosterInput.value = ""; // Clear the hidden poster field
+        document.getElementById('formTitle').textContent = "3. Create Banner Manually";
         document.getElementById('saveBtn').textContent = "Save Banner";
         document.getElementById('saveBtn').disabled = false;
         formMessage.style.display = 'none';
         searchResults.innerHTML = '';
+        latestResults.innerHTML = '';
     }
 
     document.getElementById('cancelBtn').addEventListener('click', resetForm);
 
+    // Initial load
     loadBanners();
 });
 </script>

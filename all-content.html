@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Content - Admin Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- PocketBase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
     <style>
         :root {
@@ -41,6 +40,13 @@
         .message { margin-top: 20px; padding: 12px; border-radius: 5px; text-align: center; display: none; }
         .message.success { background-color: var(--success-color); } .message.error { background-color: var(--danger-color); }
         #menuToggleBtn { display: none; }
+        
+        /* --- NEW STYLES FOR LOAD MORE --- */
+        .load-more-container { text-align: center; margin-top: 30px; margin-bottom: 50px; grid-column: 1 / -1; }
+        #loadMoreBtn { background-color: transparent; border: 2px solid var(--accent-color); color: var(--accent-color); padding: 12px 30px; font-size: 1rem; cursor: pointer; border-radius: 30px; transition: 0.3s; font-weight: bold; }
+        #loadMoreBtn:hover { background-color: var(--accent-color); color: var(--primary-bg); }
+        #loadMoreBtn.hidden { display: none; }
+        
         @media (max-width: 768px) {
             #menuToggleBtn { display: flex; position: fixed; top: 15px; left: 15px; z-index: 1001; background: var(--card-bg); border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 5px; width: 40px; height: 40px; align-items: center; justify-content: center; }
             #mainMenu { position: fixed; transform: translateX(-100%); }
@@ -52,7 +58,7 @@
 </head>
 <body>
     <div id="adminPanel">
-<nav id="mainMenu">
+        <nav id="mainMenu">
             <div class="menu-header">Admin Menu</div>
             <a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
             <hr style="border-color: #333; margin: 10px 0;">
@@ -60,7 +66,8 @@
             <a href="manage-series.html"><i class="fas fa-tv"></i> Manage Series</a>
             <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
             <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
-            <a href="https://admin.streamzonemovies.online/user_management"><i class="fas fa-users-cog"></i> User Management</a>
+            <a href="search-content.html"><i class="fas fa-search"></i> Quick Search</a>
+<a href="https://admin.streamzonemovies.online/user_management"><i class="fas fa-users-cog"></i> User Management</a>
             <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
         </nav>
         <div class="main-content">
@@ -74,7 +81,13 @@
             <p class="user-info" id="adminEmailDisplay">Admin Mode (Login Bypassed)</p>
             <div id="allContentPage" class="page-container active">
                 <div class="filter-bar" id="categoryFilterBar"></div>
+                
                 <div id="allContentContainer" class="movie-grid"></div>
+                
+                <div class="load-more-container">
+                    <button id="loadMoreBtn" class="hidden">Load More Content</button>
+                </div>
+
                 <div id="allContentMessage" class="message"></div>
             </div>
         </div>
@@ -92,9 +105,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const allContentContainer = document.getElementById('allContentContainer');
     const allContentMessage = document.getElementById('allContentMessage');
     const categoryFilterBar = document.getElementById('categoryFilterBar');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+    // --- Pagination State ---
+    let currentPage = 1;
+    const itemsPerPage = 20; // Number of items to load per click
+    let currentFilterValue = 'all'; // Keep track of current filter
 
     // --- Filter Categories ---
-    // The 'value' here is just an ID for our script. The logic below maps it to DB fields.
     const CATEGORIES = [
         { value: 'all', label: 'All Latest' },
         { value: 'movie', label: 'Movies' },
@@ -137,70 +155,90 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.matches('.filter-btn')) {
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             e.target.classList.add('active');
-            displayAllContent(e.target.dataset.filter);
+            
+            // RESET PAGINATION ON FILTER CHANGE
+            currentFilterValue = e.target.dataset.filter;
+            currentPage = 1; 
+            allContentContainer.innerHTML = ''; // Clear previous items
+            
+            fetchContent(currentFilterValue);
         }
     });
 
-    async function displayAllContent(filter) {
+    // --- Load More Listener ---
+    loadMoreBtn.addEventListener('click', () => {
+        currentPage++; // Increase page number
+        fetchContent(currentFilterValue, true); // true = append mode
+    });
+
+    // --- Main Fetch Function ---
+    async function fetchContent(filter, isAppending = false) {
         if (!allContentContainer) return;
-        allContentContainer.innerHTML = '<p class="message info" style="display:block; grid-column: 1 / -1;">Loading content...</p>';
+        
+        // Only show loading text if this is the first load (not appending)
+        if (!isAppending) {
+            allContentContainer.innerHTML = '<p class="message info" style="display:block; grid-column: 1 / -1;">Loading content...</p>';
+            loadMoreBtn.classList.add('hidden');
+        } else {
+            loadMoreBtn.textContent = "Loading...";
+            loadMoreBtn.disabled = true;
+        }
         
         try {
             let filterString = '';
 
-            // --- 🔧 NEW FILTER LOGIC (MAPPING BUTTONS TO DB FIELDS) ---
+            // Filter Logic
             if (filter !== 'all') {
                 if (filter === 'movie' || filter === 'tv') {
-                    // Check ContentType field
                     filterString = `contentType = "${filter}"`;
                 } 
                 else if (filter === 'action-thriller') {
-                    // Check Genres for Action OR Thriller
                     filterString = `genres ~ "ACTION" || genres ~ "THRILLER"`;
                 }
                 else if (filter === 'scifi-fantasy') {
-                    // Check Genres for Sci Fi OR Fantasy
                     filterString = `genres ~ "SCI FI" || genres ~ "FANTASY"`;
                 }
                 else if (filter === 'romance') {
-                    // Check Genres for Romance or Love Story
                     filterString = `genres ~ "ROMANCE" || genres ~ "LOVE STORY"`;
                 }
                 else {
-                    // For single words (horror, comedy, animation, etc.)
-                    // We convert "horror" to "HORROR" to match your DB list
                     const dbValue = filter.toUpperCase();
                     filterString = `genres ~ "${dbValue}"`;
                 }
             }
 
-            // Fetch from PocketBase
-            const records = await pb.collection('media').getFullList({
+            // --- CHANGED: Use getList instead of getFullList ---
+            const result = await pb.collection('media').getList(currentPage, itemsPerPage, {
                 sort: '-created',
                 filter: filterString
             });
 
-            if (records.length === 0) {
+            // If it's the first page load, clear the container (removes "Loading..." text)
+            if (!isAppending) {
+                allContentContainer.innerHTML = '';
+            }
+
+            if (result.items.length === 0 && currentPage === 1) {
                 allContentContainer.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding:20px;">No content found for this category.</p>`;
+                loadMoreBtn.classList.add('hidden');
                 return;
             }
 
-            allContentContainer.innerHTML = '';
-            records.forEach(item => {
+            // Render Items
+            result.items.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'content-card';
                 
-                // Handle VJ Name (safely check if array exists)
                 let vjName = 'N/A';
                 if (item.vjs && Array.isArray(item.vjs) && item.vjs.length > 0) {
-                    vjName = item.vjs[0]; // Take first VJ
+                    vjName = item.vjs[0]; 
                 } else if (item.vjs && typeof item.vjs === 'string') {
-                    vjName = item.vjs; // Handle if saved as text
+                    vjName = item.vjs; 
                 }
 
                 card.innerHTML = `
                     <div class="poster-container">
-                        <img src="${item.poster || 'https://placehold.co/400x600?text=N/A'}" alt="${item.title}">
+                        <img src="${item.poster || 'https://placehold.co/400x600?text=N/A'}" alt="${item.title}" loading="lazy">
                         <div class="vj-tag">${vjName}</div>
                     </div>
                     <div class="content-card-actions">
@@ -209,13 +247,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>`;
                 allContentContainer.appendChild(card);
             });
+
+            // --- Handle Load More Button Visibility ---
+            // If total pages > current page, show button. Otherwise hide it.
+            if (result.totalPages > currentPage) {
+                loadMoreBtn.classList.remove('hidden');
+                loadMoreBtn.textContent = "Load More Content";
+                loadMoreBtn.disabled = false;
+            } else {
+                loadMoreBtn.classList.add('hidden');
+            }
+
         } catch (err) {
-            console.error("Filter Error:", err);
+            console.error("Fetch Error:", err);
             displayMessage(allContentMessage, `Error: ${err.message}`, 'error');
+            loadMoreBtn.textContent = "Try Again";
+            loadMoreBtn.disabled = false;
         }
     }
 
-    // --- Action Buttons ---
+    // --- Action Buttons (Delegation) ---
     allContentContainer.addEventListener('click', async (e) => {
         const target = e.target.closest('button');
         if (!target) return;
@@ -246,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Load ---
     setupFilters();
-    displayAllContent('all');
+    fetchContent('all'); // Load first page
 });
 </script>
 </body>

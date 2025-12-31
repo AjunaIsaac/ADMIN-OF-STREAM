@@ -43,16 +43,35 @@
         .message { padding: 15px; border-radius: 8px; margin-top: 1rem; display: none; text-align: center; font-weight: bold; }
         .message.success { background-color: rgba(39, 174, 96, 0.2); color: var(--success-color); border: 1px solid var(--success-color); }
         .message.error { background-color: rgba(231, 76, 60, 0.2); color: var(--danger-color); border: 1px solid var(--danger-color); }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 2000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--card-bg); padding: 2rem; border-radius: 12px;
+            width: 90%; max-width: 400px; text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-content h3 { color: var(--accent-color); margin-top: 0; }
+        .modal-content p { color: var(--text-secondary); margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+        .btn-modal-yes { background: var(--success-color); color: white; border: none; }
+        .btn-modal-no { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
+
+        /* --- 📱 MOBILE RESPONSIVENESS --- */
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #mainMenu { width: 100%; height: auto; padding: 10px 0; overflow-x: auto; white-space: nowrap; display: flex; border-right: none; border-bottom: 1px solid var(--border-color); }
             #mainMenu a { display: inline-flex; padding: 10px 15px; font-size: 0.9rem; flex-direction: column; gap: 5px; text-align: center; min-width: 60px; }
-            #mainMenu i { font-size: 1.2rem; margin-bottom: 2px; }
             .main-content { padding: 1rem; }
             #searchView, #detailsView { padding: 1.2rem; }
             #detailsHeader { flex-direction: column; align-items: center; text-align: center; }
             #displayPoster { width: 140px; }
-            .btn { padding: 16px; }
+            .btn { padding: 16px; } 
             #searchResultsContainer { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
@@ -66,10 +85,12 @@
         <a href="manage-banners.html"><i class="fas fa-images"></i> <span>Banners</span></a>
         <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> <span>Notify</span></a>
         <a href="manage-users.html"><i class="fas fa-users-cog"></i> <span>Users</span></a>
-        <a href="all-content.html"><i class="fas fa-list-ul"></i> <span>All</span></a>
+       <a href="search-content.html"><i class="fas fa-search"></i> Quick Search</a>
+ <a href="all-content.html"><i class="fas fa-list-ul"></i> <span>All</span></a>
     </nav>
 
     <div class="main-content">
+        
         <div id="searchView">
             <h2>Add New Movie</h2>
             <div class="form-group">
@@ -128,11 +149,19 @@
             <div id="formMessage" class="message"></div>
         </div>
     </div>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-check-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
+
+    <div id="notificationModal" class="modal-overlay">
+        <div class="modal-content">
+            <i class="fas fa-bell" style="font-size: 3rem; color: var(--accent-color); margin-bottom: 1rem;"></i>
+            <h3>Movie Saved!</h3>
+            <p>Would you like to send a notification for this movie to your users now?</p>
+            <div class="modal-actions">
+                <button class="btn btn-modal-no" id="modalNoBtn">No, Later</button>
+                <button class="btn btn-modal-yes" id="modalYesBtn">Yes, Send Notification</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ✅ NEW FIREBASE CONFIG
         const firebaseConfig = {
@@ -155,26 +184,22 @@
         
         const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5"; 
 
-        const GENRE_LIST = [
-            "ACTION", "ADVENTURE", "ANIMATION", "COMEDY", "CRIME", "DOCUMENTARY", "DRAMA", 
-            "FAMILY", "FANTASY", "HISTORY", "HORROR", "KUNGU FU", "LOVE STORY", "MUSIC", 
-            "MYSTERY", "ROMANCE", "SCI FI", "SPORT", "THRILLER", "WAR", "WESTERN"
-        ];
-        
-        const TAGS_LIST = [
-            "latest_uploads", "recent_movies", "most_liked", "romance", 
-            "Latest-Movies", "indian",
-            "action-thriller", "scifi-fantasy", "high-school", "animation", "horror", 
-            "comedy", "adventure", "send_notification"
-        ];
+    const GENRE_LIST = [ "ACTION", "ADVENTURE", "ANIMATION", "COMEDY", "CRIME", "DOCUMENTARY", "DRAMA", "FAMILY", "FANTASY", "HISTORY", "HORROR", "KUNGU FU", "LOVE STORY", "MUSIC", "MYSTERY", "ROMANCE", "SCI FI", "SPORT", "THRILLER", "WAR", "WESTERN" ];
+    const TAGS_LIST = [ "latest_uploads", "recent_movies", "most_liked", "romance", "Latest-Movies", "indian", "action-thriller", "scifi-fantasy", "high-school", "animation", "horror", "comedy", "adventure", "send_notification" ];
+    const VJ_LIST = ["VJ JUNIOR", "VJ TONNY","VJ NELLY","VJ HEAVY Q","VJ MAYANJA","VJ ARTIK","VJ SHIVO", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
 
-        const VJ_LIST = ["VJ JUNIOR", "VJ TONNY","VJ ARTIK","VJ SHIVO", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
+    let lastSavedRecordId = null; // Store ID for the notification redirect
 
-        const searchView = document.getElementById('searchView');
-        const detailsView = document.getElementById('detailsView');
-        const searchResults = document.getElementById('searchResultsContainer');
-        const msgEl = document.getElementById('formMessage');
-        const saveBtn = document.getElementById('saveBtn');
+    const searchView = document.getElementById('searchView');
+    const detailsView = document.getElementById('detailsView');
+    const searchResults = document.getElementById('searchResultsContainer');
+    const msgEl = document.getElementById('formMessage');
+    const saveBtn = document.getElementById('saveBtn');
+    
+    // Modal Elements
+    const notifModal = document.getElementById('notificationModal');
+    const modalYesBtn = document.getElementById('modalYesBtn');
+    const modalNoBtn = document.getElementById('modalNoBtn');
 
         function createCheckboxes(list, containerId, name) {
             const container = document.getElementById(containerId);
@@ -314,37 +339,67 @@
 
             const currentId = document.getElementById('recordId').value;
 
-            try {
-                if (data.tmdb_id) {
-                    const existingRecords = await pb.collection('media').getFullList({
-                        filter: `tmdb_id = "${data.tmdb_id}"`
-                    });
-                    const isSameVjs = (arr1, arr2) => JSON.stringify([...(arr1 || [])].sort()) === JSON.stringify([...(arr2 || [])].sort());
-                    const duplicate = existingRecords.find(r => (currentId && r.id === currentId) ? false : isSameVjs(r.vjs, data.vjs));
-                    if (duplicate) throw new Error(`DUPLICATE FOUND: This movie already exists with these exact VJs.`);
-                }
+        try {
+            // DUPLICATE CHECK
+            if (data.tmdb_id) {
+                const existingRecords = await pb.collection('media').getFullList({ filter: `tmdb_id = "${data.tmdb_id}"` });
+                const isSameVjs = (arr1, arr2) => {
+                    const a = [...(arr1 || [])].sort();
+                    const b = [...(arr2 || [])].sort();
+                    return JSON.stringify(a) === JSON.stringify(b);
+                };
+                const duplicate = existingRecords.find(r => {
+                    if (currentId && r.id === currentId) return false;
+                    return isSameVjs(r.vjs, data.vjs);
+                });
+                if (duplicate) throw new Error(`DUPLICATE FOUND: This movie already exists with these exact VJs.`);
+            }
 
                 saveBtn.innerText = "Processing...";
 
-                if (currentId) {
-                    await pb.collection('media').update(currentId, data);
-                } else {
-                    await pb.collection('media').create(data);
-                }
-                
-                msgEl.textContent = "Success! Movie saved correctly.";
-                msgEl.className = "message success";
-                msgEl.style.display = 'block';
-                setTimeout(() => window.location.href='/manage-movies.html', 1500);
-
-            } catch (err) {
-                msgEl.textContent = `Error: ${err.message}`;
-                msgEl.className = "message error";
-                msgEl.style.display = 'block';
-                saveBtn.disabled = false;
-                saveBtn.innerText = currentId ? "Update Movie" : "Save to Database";
+            let result;
+            if (currentId) {
+                result = await pb.collection('media').update(currentId, data);
+            } else {
+                result = await pb.collection('media').create(data);
             }
-        });
+            
+            // --- SUCCESS FLOW MODIFIED FOR NOTIFICATION ---
+            lastSavedRecordId = result.id; // Store ID for redirection
+            
+            msgEl.textContent = "Success! Movie saved.";
+            msgEl.className = "message success";
+            msgEl.style.display = 'block';
+            
+            // Show the modal instead of redirecting immediately
+            notifModal.style.display = 'flex'; 
+            
+        } catch (err) {
+            msgEl.textContent = `Error: ${err.message}`;
+            msgEl.className = "message error";
+            msgEl.style.display = 'block';
+            saveBtn.disabled = false;
+            saveBtn.innerText = currentId ? "Update Movie" : "Save to Database";
+        }
+    });
+
+    // --- MODAL BUTTON HANDLERS ---
+    
+    // Option 1: No -> Just refresh/go back to movies list
+    modalNoBtn.addEventListener('click', () => {
+        window.location.href = 'manage-movies.html';
+    });
+
+    // Option 2: Yes -> Go to notifications page with the new ID
+    modalYesBtn.addEventListener('click', () => {
+        if(lastSavedRecordId) {
+            // We pass autofill_id in the URL
+            window.location.href = `manage-notifications.html?autofill_id=${lastSavedRecordId}`;
+        } else {
+            // Fallback if something weird happened
+            window.location.href = 'manage-notifications.html';
+        }
+    });
 
         document.getElementById('cancelBtn').addEventListener('click', () => {
             const id = document.getElementById('recordId').value;
