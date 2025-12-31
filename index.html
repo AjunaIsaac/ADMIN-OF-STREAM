@@ -5,21 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- ✅ ADD POCKETBASE SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
-
     <style>
-        /* --- Redesign Styles --- */
         :root {
-            --primary-bg: #0A0F2A;
-            --card-bg: #1C2141;
-            --accent-color: #DFFF00;
-            --text-primary: #FFFFFF;
-            --text-secondary: #a9a9b3;
-            --logout-bg: #e74c3c;
-            --input-bg: #0A0F2A;
-            --danger-color: #e74c3c;
+            --primary-bg: #0A0F2A; --card-bg: #1C2141; --accent-color: #DFFF00;
+            --text-primary: #FFFFFF; --text-secondary: #a9a9b3; --logout-bg: #e74c3c;
+            --input-bg: #0A0F2A; --danger-color: #e74c3c;
         }
         body { background-color: var(--primary-bg); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         #loginScreen { display: flex; width: 100%; height: 100vh; align-items: center; justify-content: center; }
@@ -28,17 +18,15 @@
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; margin-bottom: 8px; color: var(--text-secondary); }
         .form-group input { width: 100%; background-color: var(--input-bg); border: 1px solid #33395b; border-radius: 8px; padding: 15px; color: var(--text-primary); font-size: 1rem; box-sizing: border-box; }
-        #loginForm button { width: 100%; background: linear-gradient(90deg, #FF416C, #FFDE00); color: white; border: none; border-radius: 8px; padding: 15px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s ease; }
-        #loginForm button:hover { transform: scale(1.02); }
+        #loginForm button { width: 100%; background: linear-gradient(90deg, #FF416C, #FFDE00); color: white; border: none; border-radius: 8px; padding: 15px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
         #adminPanel { display: flex; width: 100%; height: 100vh; overflow: hidden; }
         #mainMenu { width: 250px; flex-shrink: 0; background-color: #111533; min-height: 100vh; transition: transform 0.3s ease; z-index: 1000; }
-        #mainMenu a { display: block; padding: 15px 20px; color: var(--text-secondary); text-decoration: none; transition: background-color 0.3s, color 0.3s; }
+        #mainMenu a { display: block; padding: 15px 20px; color: var(--text-secondary); text-decoration: none; }
         #mainMenu a:hover, #mainMenu a.active { background-color: var(--card-bg); color: var(--accent-color); }
-        #mainMenu .menu-header { padding: 20px; font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
+        #mainMenu .menu-header { padding: 20px; font-size: 1.2rem; font-weight: 600; }
         #mainMenu a i { margin-right: 10px; }
         .main-content { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
         .admin-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 10px; }
-        .header-title-section { flex-grow: 1; }
         .admin-header h1 { color: var(--accent-color); font-size: 2.5rem; font-weight: 700; line-height: 1.1; margin: 0; }
         .user-info { color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; }
         #menuToggleBtn { display: block; position: static; background: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); border-radius: 8px; width: 50px; height: 50px; font-size: 1.5rem; cursor: pointer; padding: 0; margin-right: 20px; }
@@ -46,8 +34,7 @@
         .page-container { margin-top: 2rem; display: none; }
         .page-container.active { display: block; }
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
-        .dashboard-card { background-color: var(--card-bg); border-radius: 15px; padding: 1.5rem; text-decoration: none; color: var(--text-primary); display: flex; flex-direction: column; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .dashboard-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .dashboard-card { background-color: var(--card-bg); border-radius: 15px; padding: 1.5rem; text-decoration: none; color: var(--text-primary); display: flex; flex-direction: column; }
         .dashboard-card i { font-size: 2.5rem; color: var(--accent-color); margin-bottom: 1rem; }
         .dashboard-card h3 { margin: 0 0 0.5rem 0; }
         .dashboard-card p { color: var(--text-secondary); font-size: 0.9rem; flex-grow: 1; }
@@ -84,7 +71,7 @@
             <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
             <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
             <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
-            <a href="all-content.html"><i class="fas fa-list-ul"></i> Browse All Content</a>
+            <a href="all-content.html"><i class="fas fa-list-ul"></i> All Content</a>
         </nav>
         <div class="main-content">
             <div class="admin-header">
@@ -124,16 +111,31 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-check-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         // ✅ 1. INITIALIZE POCKETBASE (For Content)
-        const pb = new PocketBase('https://db.streamzonemovies.online');
+        const pb = new PocketBase('https://db.bestmoviesug.com');
         pb.autoCancellation(false);
 
         // ✅ 2. INITIALIZE FIREBASE (For Auth Only)
-        const firebaseConfig = { apiKey: "AIzaSyCgbaRR6ezvswehl1Q21ICHgBtXZ9bcLwA", authDomain: "my-movies-admin.firebaseapp.com", projectId: "my-movies-admin", storageBucket: "my-movies-admin.firebasestorage.app", messagingSenderId: "492775126123", appId: "1:492775126123:web:7ad51095ff15f61ed12d2e" };
+        const firebaseConfig = {
+            apiKey: "AIzaSyCozaGjxZ3CLFiGjnzatKtStDHgoH71wk4",
+            authDomain: "best-movies-ug-4d6d6.firebaseapp.com",
+            projectId: "best-movies-ug-4d6d6",
+            storageBucket: "best-movies-ug-4d6d6.firebasestorage.app",
+            messagingSenderId: "583499166737",
+            appId: "1:583499166737:web:8fe01624b46b8e063f6db0",
+            measurementId: "G-340GWH52KT"
+        };
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth(app);
+        const appCheck = firebase.appCheck(app);
+        appCheck.activate(
+            new firebase.appCheck.ReCaptchaEnterpriseProvider('6LcbAhksAAAAAMODEm_XTJPyJRclPJwe4GAAYLAP'),
+            true
+        );
 
         // DOM Elements
         const loginScreen = document.getElementById('loginScreen');
@@ -200,21 +202,16 @@
             if (!term) { setLoading(searchManageBtn, false); return; }
 
             try {
-                // Search by Title (partial) OR tmdbId (exact)
+                // ✅ FIX: Search by `tmdb_id` (with underscore)
                 const result = await pb.collection('media').getList(1, 50, {
-                    filter: `title ~ "${term}" || tmdbId = "${term}"`
+                    filter: `title ~ "${term}" || tmdb_id = "${term}"`
                 });
 
                 if (result.items.length === 0) {
                     manageSearchResults.innerHTML = '<p>No results found.</p>';
                 } else {
                     result.items.forEach(item => {
-                        // Handle VJs safely (JSON array)
-                        let vjDisplay = 'N/A';
-                        if (item.vjs && Array.isArray(item.vjs) && item.vjs.length > 0) {
-                            vjDisplay = item.vjs[0];
-                        }
-
+                        let vjDisplay = (item.vjs && Array.isArray(item.vjs) && item.vjs.length > 0) ? item.vjs[0] : 'N/A';
                         manageSearchResults.innerHTML += `
                             <div class="result-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: var(--primary-bg); border-radius: 8px; margin-bottom: 10px;">
                                 <span>${item.title} (VJ: ${vjDisplay}) - [${item.contentType || 'movie'}]</span>
@@ -238,7 +235,6 @@
             const target = e.target.closest('button');
             if (!target) return;
 
-            // EDIT
             if (target.classList.contains('edit')) {
                 const docId = target.dataset.id;
                 const type = target.dataset.type;
@@ -249,7 +245,6 @@
                 }
             }
 
-            // DELETE (POCKETBASE)
             if (target.classList.contains('delete')) {
                 if (confirm('Are you sure you want to permanently delete this item?')) {
                     try {
