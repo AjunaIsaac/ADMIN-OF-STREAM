@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Manage Series - Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Mobile Critical -->
+    <title>Manage Series - Admin Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
     <style>
@@ -57,24 +58,6 @@
         summary { cursor: pointer; font-weight: bold; color: var(--accent-color); }
         pre { background: #000; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; color: #eee; font-size: 0.8rem; }
 
-        /* --- MODAL --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); z-index: 2000;
-            display: none; justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: var(--card-bg); padding: 2rem; border-radius: 12px;
-            width: 90%; max-width: 400px; text-align: center;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .modal-content h3 { color: var(--accent-color); margin-top: 0; }
-        .modal-content p { color: var(--text-secondary); margin-bottom: 20px; }
-        .modal-actions { display: flex; gap: 10px; justify-content: center; }
-        .btn-modal-yes { background: var(--success-color); color: white; border: none; }
-        .btn-modal-no { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
-
         /* --- 📱 MOBILE RESPONSIVENESS --- */
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -103,8 +86,7 @@
         <a href="manage-banners.html"><i class="fas fa-images"></i> <span>Banners</span></a>
         <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> <span>Notify</span></a>
         <a href="manage-users.html"><i class="fas fa-users-cog"></i> <span>Users</span></a>
-       <a href="search-content.html"><i class="fas fa-search"></i> Quick Search</a>
- <a href="all-content.html"><i class="fas fa-list-ul"></i> <span>All</span></a>
+        <a href="all-content.html"><i class="fas fa-list-ul"></i> <span>All</span></a>
     </nav>
 
     <div class="main-content">
@@ -142,11 +124,13 @@
                     <div id="vjContainer" class="checkbox-group"></div>
                 </div>
 
+                <!-- SEPARATED GENRES -->
                 <div class="form-group">
                     <label>Genres <small>(TMDB)</small></label>
                     <div id="genresContainer" class="checkbox-group"></div>
                 </div>
 
+                <!-- SEPARATED TAGS -->
                 <div class="form-group">
                     <label>App Tags <small>(Sections)</small></label>
                     <div id="tagsContainer" class="checkbox-group"></div>
@@ -162,7 +146,7 @@
                 </div>
 
                 <div class="btn-group" style="display: flex; gap: 15px; margin-top: 20px;">
-                    <button type="button" class="btn btn-secondary" id="cancelSeriesBtn">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='all-content.html'">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="saveBtn">Save Series</button>
                 </div>
             </form>
@@ -170,25 +154,12 @@
         </div>
 
     </div>
-
-    <div id="notificationModal" class="modal-overlay">
-        <div class="modal-content">
-            <i class="fas fa-bell" style="font-size: 3rem; color: var(--accent-color); margin-bottom: 1rem;"></i>
-            <h3>Series Saved!</h3>
-            <p>Would you like to send a notification for this series to your users now?</p>
-            <div class="modal-actions">
-                <button class="btn btn-modal-no" id="modalNoBtn">No, Later</button>
-                <button class="btn btn-modal-yes" id="modalYesBtn">Yes, Send Notification</button>
-            </div>
-        </div>
-    </div>
-    
 <script>
     const pb = new PocketBase('https://db.streamzonemovies.online');
     pb.autoCancellation(false);
     const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5";
 
-    const VJ_LIST = ["VJ JUNIOR", "VJ TONNY","VJ ARTIK","VJ SHIVO", "VJ PAX","VJ HEAVY Q", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
+    const VJ_LIST = ["VJ JUNIOR", "VJ TONNY","VJ ARTIK","VJ SHIVO", "VJ PAX", "VJ EMMY", "VJ LIGHT","VJ RYAN","VJ JOE", "HEAVY Q", "VJ MK","VJ HAM", "VJ MARK", "VJ SHIELD", "VJ ISMA K","VJ MOSCO", "ILLESS", "VJ BONNY", "VJ NEIL", "VJ JOVAN", "VJ TOM", "VJ SHAO K", "VJ JINGO", "VJ ICE P", "VJ KEVO", "VJ KEVIN", "VJ KIN", "VJ KRISS SWEET", "VJ HD", "VJ DAN DE", "VJ SAMMY", "VJ IVO", "VJ LITTLE T", "VJ LASH", "VJ MOX", "VJ MUBA", "VJ EDDY", "VJ KAM", "VJ LANCE", "VJ KS", "VJ ULIO", "VJ AARON", "VJ CABS", "VJ BANKS", "VJ JIMMY", "VJ BAROS", "VJ SOUL", "VJ SON", "VJ KIMULI", "VJ FREDY", "VJ JUMPERS", "VJ ASHIM", "VJ PAULETA", "VJ MARTIN K", "VJ HENRICO", "VJ MUSA", "VJ UNCLE T", "VJ WAZA", "VJ RONAGE"];
     
     const GENRE_LIST = [
         "ACTION", "ADVENTURE", "ANIMATION", "COMEDY", "CRIME", "DOCUMENTARY", "DRAMA", 
@@ -202,20 +173,12 @@
     , "western_series", "send_notification"
     ];
 
-    let lastSavedRecordId = null; // Store ID for the notification redirect
-
     const searchView = document.getElementById('searchView');
     const detailsView = document.getElementById('detailsView');
     const searchResults = document.getElementById('searchResultsContainer');
     const msgEl = document.getElementById('formMessage');
     const saveBtn = document.getElementById('saveBtn');
     const episodesJsonInput = document.getElementById('episodesJsonInput');
-    
-    // Modal Elements
-    const notifModal = document.getElementById('notificationModal');
-    const modalYesBtn = document.getElementById('modalYesBtn');
-    const modalNoBtn = document.getElementById('modalNoBtn');
-    const cancelSeriesBtn = document.getElementById('cancelSeriesBtn');
 
     document.addEventListener('DOMContentLoaded', () => {
         createCheckboxes(VJ_LIST, 'vjContainer', 'vjs');
@@ -270,12 +233,6 @@
             const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}`);
             const data = await res.json();
 
-            // Reset record ID if we are searching a new series
-            if (!existingRecord) {
-                document.getElementById('recordId').value = "";
-                saveBtn.textContent = "Save Series";
-            }
-
             let cleanYear = "";
             if (data.first_air_date) cleanYear = data.first_air_date.split('-')[0];
             document.getElementById('releaseYear').value = cleanYear;
@@ -288,6 +245,8 @@
             document.getElementById('posterUrl').value = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
             document.getElementById('backdropUrl').value = data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : '';
 
+            // ONLY clear check boxes if we are NOT editing an existing record
+            // or if we are just starting a fresh search
             if (!existingRecord) {
                 document.querySelectorAll('input[name="genres"]').forEach(cb => cb.checked = false);
                 document.querySelectorAll('input[name="tags"]').forEach(cb => cb.checked = false);
@@ -297,8 +256,7 @@
                         const tmdbGenre = g.name.toUpperCase();
                         const mappedGenre = tmdbGenre === 'SCI-FI & FANTASY' ? 'SCI FI' : tmdbGenre;
                         if(GENRE_LIST.includes(mappedGenre)) {
-                            const cb = document.querySelector(`input[name="genres"][value="${mappedGenre}"]`);
-                            if (cb) cb.checked = true;
+                            document.querySelector(`input[name="genres"][value="${mappedGenre}"]`).checked = true;
                         }
                     });
                 }
@@ -343,6 +301,7 @@
             document.getElementById('seriesTitle').textContent = record.title; 
             document.getElementById('releaseYear').value = record.year || '';
 
+            // 1. First, Load TMDB Data (which might try to reset checkboxes)
             if (record.tmdb_id) {
                 await loadTmdbDetails(record.tmdb_id, record);
             } else {
@@ -353,6 +312,8 @@
                 episodesJsonInput.value = JSON.stringify(record.episodes || [], null, 2);
             }
 
+            // 2. AFTER TMDB is done, force the checkboxes to match the Database Record
+            // This prevents TMDB from wiping out your saved genres/tags/vjs
             const setCheck = (name, vals) => { 
                 if(vals) vals.forEach(v => { 
                     const cb = document.querySelector(`input[name="${name}"][value="${v}"]`); 
@@ -360,6 +321,7 @@
                 }) 
             };
             
+            // Clear checks first just in case
             document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
 
             setCheck('vjs', record.vjs);
@@ -379,8 +341,12 @@
             const rawJson = JSON.parse(episodesJsonInput.value);
             if (!Array.isArray(rawJson)) throw new Error("JSON data must be an array.");
 
+            // -------------------------------------------------------------
+            // FIX: "WRONG" JSON CONVERSION LOGIC
+            // -------------------------------------------------------------
             if (rawJson.length > 0 && rawJson[0].hasOwnProperty('episodes') && Array.isArray(rawJson[0].episodes)) {
                 
+                console.log("Nested JSON detected. Converting...");
                 let convertedEpisodes = [];
                 
                 rawJson.forEach(seasonItem => {
@@ -388,6 +354,7 @@
                     
                     if (seasonItem.episodes && Array.isArray(seasonItem.episodes)) {
                         seasonItem.episodes.forEach(ep => {
+                            // PRIORITIZE videoUrl. Trim whitespace to avoid broken links.
                             const vUrl = ep.videoUrl ? ep.videoUrl.trim() : "";
                             const regUrl = ep.url ? ep.url.trim() : "";
 
@@ -395,23 +362,26 @@
                                 season: currentSeason,
                                 episode: parseInt(ep.episode_number),
                                 title: ep.title || `Episode ${ep.episode_number}`,
-                                url: vUrl || regUrl 
+                                url: vUrl || regUrl // If videoUrl exists, use it. Else use url.
                             });
                         });
                     }
                 });
 
                 episodes = convertedEpisodes;
+                // Update text area so user sees the fixed format immediately
                 episodesJsonInput.value = JSON.stringify(episodes, null, 2);
             } else {
+                // Already Flat Format
                 episodes = rawJson;
             }
+            // -------------------------------------------------------------
 
         } catch (err) {
             msgEl.textContent = `Invalid Episodes JSON: ${err.message}`;
             msgEl.className = "message error";
             msgEl.style.display = 'block';
-            saveBtn.disabled = false; saveBtn.innerText = document.getElementById('recordId').value ? "Update Series" : "Save Series";
+            saveBtn.disabled = false; saveBtn.innerText = "Save Series";
             return;
         }
         
@@ -457,56 +427,21 @@
 
             saveBtn.innerText = "Saving to Database...";
 
-            let result;
             if (currentId) {
-                result = await pb.collection('media').update(currentId, data);
+                await pb.collection('media').update(currentId, data);
             } else {
-                result = await pb.collection('media').create(data);
+                await pb.collection('media').create(data);
             }
-            
-            lastSavedRecordId = result.id; // Store ID for redirection
-
             msgEl.textContent = "Series saved successfully!";
             msgEl.className = "message success";
             msgEl.style.display = 'block';
-            
-            // Show the modal instead of redirecting immediately
-            notifModal.style.display = 'flex';
-            
+            setTimeout(() => window.location.href='all-content.html', 1500);
         } catch (err) {
             msgEl.textContent = `Error: ${err.message}`;
             msgEl.className = "message error";
             msgEl.style.display = 'block';
             saveBtn.disabled = false;
             saveBtn.innerText = currentId ? "Update Series" : "Save Series";
-        }
-    });
-
-    // --- MODAL BUTTON HANDLERS ---
-    
-    // Option 1: No -> Just go back to content list
-    modalNoBtn.addEventListener('click', () => {
-        window.location.href = '/manage-series.html';
-    });
-
-    // Option 2: Yes -> Go to notifications page with the new ID
-    modalYesBtn.addEventListener('click', () => {
-        if(lastSavedRecordId) {
-            window.location.href = `manage-notifications.html?autofill_id=${lastSavedRecordId}`;
-        } else {
-            window.location.href = 'manage-notifications.html';
-        }
-    });
-
-    // Cancel Button logic
-    cancelSeriesBtn.addEventListener('click', () => {
-        const id = document.getElementById('recordId').value;
-        if(id) {
-            window.location.href='/manage-series.html';
-        } else {
-            detailsView.style.display = 'none';
-            searchView.style.display = 'block';
-            document.getElementById('seriesForm').reset();
         }
     });
 </script>
