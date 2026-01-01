@@ -25,6 +25,8 @@
             margin: 0;
         }
         #adminPanel { display: flex; }
+        
+        /* --- SIDEBAR --- */
         #mainMenu {
             width: 250px;
             flex-shrink: 0;
@@ -32,12 +34,12 @@
             min-height: 100vh;
             transition: transform 0.3s ease;
             z-index: 1000;
+            padding-top: 20px;
+            border-right: 1px solid #33395b;
         }
-        #mainMenu a { display: block; padding: 15px 20px; color: var(--text-secondary); text-decoration: none; }
-        #mainMenu a:hover, #mainMenu a.active { background-color: var(--card-bg); color: var(--accent-color); }
-        #mainMenu .menu-header { padding: 20px; font-size: 1.2rem; font-weight: 600; }
-        #mainMenu a i { margin-right: 10px; }
-
+        #mainMenu a { display: block; padding: 15px 20px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center; gap: 10px; }
+        #mainMenu a:hover, #mainMenu a.active { background-color: var(--card-bg); color: var(--accent-color); border-left: 4px solid var(--accent-color); }
+        
         .main-content { flex-grow: 1; padding: 1.5rem; }
         
         .admin-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 2rem; }
@@ -46,78 +48,77 @@
         #menuToggleBtn { display: none; background: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); border-radius: 8px; width: 45px; height: 45px; font-size: 1.5rem; cursor: pointer; }
         .logout-btn { background-color: #e74c3c; color: white; border: none; border-radius: 8px; padding: 10px 15px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
+        /* --- CARDS --- */
         .content-card-layout { background-color: var(--card-bg); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; }
         .content-card-layout h2 { font-size: 1.5rem; color: var(--text-primary); margin: 0 0 1.5rem 0; border-bottom: 1px solid #33395b; padding-bottom: 1rem; }
         
+        /* --- FORMS --- */
         .form-group { margin-bottom: 1rem; }
         .form-group label { display: block; margin-bottom: 8px; color: var(--text-secondary); }
         .form-group input, .form-group textarea, .input-group-prefix { width: 100%; background-color: var(--input-bg); border: 1px solid #33395b; border-radius: 8px; color: var(--text-primary); font-size: 1rem; box-sizing: border-box; }
         .form-group input, .form-group textarea { padding: 12px; }
+        
+        /* Deep Link Prefix Styling */
         .input-group-prefix { display: flex; }
-        .input-group-prefix span { padding: 12px; background-color: #2a2f50; border-right: 1px solid #33395b; }
-        .input-group-prefix input { border: none; flex-grow: 1; }
+        .input-group-prefix span { padding: 12px; background-color: #2a2f50; border-right: 1px solid #33395b; color: #aaa; white-space: nowrap; }
+        .input-group-prefix input { border: none; flex-grow: 1; border-radius: 0 8px 8px 0; }
 
         .gradient-btn { width: 100%; background: linear-gradient(90deg, #FF416C, #FFDE00); color: black; border: none; border-radius: 8px; padding: 15px; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 1rem; }
+        .gradient-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
+        /* --- PREVIEW SECTION --- */
         .notification-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         .notification-preview-wrapper { background: var(--input-bg); border: 1px solid #33395b; padding: 20px; border-radius: 12px; height: 100%; }
-        #previewImage { display: none; width: 100%; margin-top: 12px; border-radius: 8px; }
+        #previewImage { display: none; width: 100%; margin-top: 12px; border-radius: 8px; max-height: 200px; object-fit: cover; }
 
-        /* ✅ REDESIGNED SEARCH RESULTS */
+        /* --- SEARCH RESULTS --- */
         .search-result-item {
-            background-color: var(--primary-bg);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-            display: flex;
-            gap: 1rem;
-            align-items: center;
+            background-color: var(--primary-bg); border-radius: 8px; padding: 1rem; margin-top: 1rem;
+            display: flex; gap: 1rem; align-items: center; border: 1px solid #33395b;
         }
-        .search-result-item img {
-            width: 80px;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 4px;
-            flex-shrink: 0;
-        }
+        .search-result-item img { width: 60px; height: 90px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
         .search-result-info { flex-grow: 1; }
         .search-result-info h3 { margin: 0; font-size: 1.1rem; }
         .search-result-info p { font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px; }
-        .overview-snippet { font-size: 0.85rem; margin-top: 8px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .select-btn { padding: 8px 12px; cursor: pointer; border-radius: 4px; border: none; background-color: var(--accent-color); color: var(--primary-bg); font-weight: bold; }
 
         .message { padding: 15px; border-radius: 8px; margin-top: 1rem; text-align: center; display: none; }
-        .message.success { background-color: var(--success-color); }
-        .message.error { background-color: var(--danger-color); }
-        .message.info { background-color: var(--info-color); }
+        .message.success { background-color: rgba(76, 175, 80, 0.2); color: var(--success-color); border: 1px solid var(--success-color); }
+        .message.error { background-color: rgba(244, 67, 54, 0.2); color: var(--danger-color); border: 1px solid var(--danger-color); }
+        .message.info { background-color: rgba(33, 150, 243, 0.2); color: var(--info-color); border: 1px solid var(--info-color); }
         
         @media (max-width: 900px) {
             .notification-layout { grid-template-columns: 1fr; }
         }
         @media (max-width: 768px) {
             #adminPanel { flex-direction: column; }
-            #mainMenu { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); }
-            #mainMenu.open { transform: translateX(0); }
-            #menuToggleBtn { display: block; }
+            #mainMenu { width: 100%; height: auto; padding: 10px 0; overflow-x: auto; white-space: nowrap; display: flex; border-right: none; border-bottom: 1px solid #33395b; min-height: auto; }
+            #mainMenu a { display: inline-flex; padding: 10px 15px; font-size: 0.9rem; flex-direction: column; gap: 5px; text-align: center; min-width: 60px; }
             .admin-header { flex-direction: column; align-items: flex-start; }
+            .notification-layout { display: flex; flex-direction: column-reverse; } /* Form on top on mobile */
         }
     </style>
 </head>
 <body>
     <div id="adminPanel">
         <nav id="mainMenu">
-            <!-- Your navigation links here -->
+            <a href="index.html"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a>
+            <a href="manage-movies.html"><i class="fas fa-film"></i> <span>Movies</span></a>
+            <a href="manage-series.html"><i class="fas fa-tv"></i> <span>Series</span></a>
+            <a href="manage-banners.html"><i class="fas fa-images"></i> <span>Banners</span></a>
+            <a href="manage-notifications.html" class="active"><i class="fas fa-paper-plane"></i> <span>Notify</span></a>
+            <a href="manage-users.html"><i class="fas fa-users-cog"></i> <span>Users</span></a>
+            <a href="all-content.html"><i class="fas fa-list-ul"></i> <span>All</span></a>
         </nav>
 
         <div class="main-content">
             <div class="admin-header">
                 <button id="menuToggleBtn"><i class="fas fa-bars"></i></button>
                 <h1>Manage Notifications</h1>
-                <button class="logout-btn" id="logoutBtn">Logout</button>
-            </div>
+                </div>
             
             <div id="notificationSearchCard" class="content-card-layout">
-                <h2>1. Search for Content</h2>
+                <h2>1. Search Content (Optional)</h2>
                 <div class="form-group">
                     <input type="text" id="notificationSearchQuery" placeholder="Search any Movie or TV Show on TMDB...">
                 </div>
@@ -130,15 +131,23 @@
                 <div class="notification-layout">
                     <div class="notification-form-col">
                         <form id="notificationForm">
-                            <!-- Form inputs -->
-                            <div class="form-group"><label for="notifTitle">Title</label><input type="text" id="notifTitle" required></div>
-                            <div class="form-group"><label for="notifBody">Body</label><textarea id="notifBody" required></textarea></div>
-                            <div class="form-group"><label for="notifImageUrl">Image URL</label><input type="url" id="notifImageUrl"></div>
                             <div class="form-group">
-                                <label for="notifUrlId">App Page to Open (Auto-filled)</label>
+                                <label for="notifTitle">Title</label>
+                                <input type="text" id="notifTitle" required placeholder="e.g. New Arrival: Gladiator II">
+                            </div>
+                            <div class="form-group">
+                                <label for="notifBody">Body</label>
+                                <textarea id="notifBody" required rows="4" placeholder="Watch now in HD..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="notifImageUrl">Image URL</label>
+                                <input type="url" id="notifImageUrl" placeholder="https://...">
+                            </div>
+                            <div class="form-group">
+                                <label for="notifUrlId">App Page to Open</label>
                                 <div class="input-group-prefix">
                                     <span>streamzonemovies://details?id=</span>
-                                    <input type="text" id="notifUrlId" placeholder="Select content to fill">
+                                    <input type="text" id="notifUrlId" placeholder="Paste Record ID here">
                                 </div>
                             </div>
                             <button type="submit" id="sendNotificationBtn" class="gradient-btn">Send Notification</button>
@@ -146,7 +155,6 @@
                     </div>
                     <div class="notification-preview-col">
                         <div class="notification-preview-wrapper">
-                            <!-- Preview elements -->
                             <h3 style="text-align: center; color: var(--accent-color); margin-bottom: 15px;">Live Preview</h3>
                             <div style="display: flex; align-items: center; margin-bottom: 8px;">
                                 <img src="https://placehold.co/24x24/d1e231/0b0f30?text=S" alt="App Icon" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;">
@@ -168,8 +176,9 @@
     
     <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const pb = new PocketBase('https://db.bestmoviesug.com');
+    document.addEventListener('DOMContentLoaded', async () => {
+        const pb = new PocketBase('https://db.streamzonemovies.online');
+        pb.autoCancellation(false);
         const TMDB_API_KEY = "f7a3b097ba7a990fd0c8ef3147646fb5";
 
         const searchContentBtn = document.getElementById('searchContentBtn');
@@ -181,16 +190,25 @@
         const notifBodyInput = document.getElementById('notifBody');
         const notifImageUrlInput = document.getElementById('notifImageUrl');
         const notifUrlIdInput = document.getElementById('notifUrlId');
+        
+        // Preview Elements
         const previewTitle = document.getElementById('previewTitle');
         const previewBody = document.getElementById('previewBody');
         const previewImage = document.getElementById('previewImage');
 
-        const setLoading = (btn, isLoading) => { if(btn) btn.disabled = isLoading; };
+        const setLoading = (btn, isLoading) => { 
+            if(btn) {
+                btn.disabled = isLoading; 
+                btn.textContent = isLoading ? "Processing..." : (btn.id === 'sendNotificationBtn' ? "Send Notification" : "Search TMDB");
+            }
+        };
         const displayMessage = (el, msg, type) => { el.textContent = msg; el.className = `message ${type}`; el.style.display = 'block'; setTimeout(() => { el.style.display = 'none'; }, 8000); };
         
+        // --- 1. SEND LOGIC ---
         async function sendNotification(title, body, imageUrl = '', url = '') {
             const payload = { data: { title, body, imageUrl, url } };
             try {
+                // Replace with your actual Worker URL
                 const functionUrl = 'https://spring-credit-724c.ajunaisaac-ug.workers.dev';
                 const response = await fetch(functionUrl, {
                     method: 'POST',
@@ -207,6 +225,7 @@
             }
         }
 
+        // --- 2. SEARCH LOGIC (Manual Search) ---
         searchContentBtn.addEventListener('click', async () => {
             const query = document.getElementById('notificationSearchQuery').value.trim();
             if (!query) return;
@@ -227,14 +246,13 @@
                 results.forEach(item => {
                     const title = item.title || item.name;
                     const year = (item.release_date || item.first_air_date || '').split('-')[0];
-                    const overview = item.overview ? item.overview.substring(0, 120) + '...' : 'No overview.';
+                    const overview = item.overview ? item.overview.substring(0, 100) + '...' : 'No overview.';
 
                     searchResultsContainer.innerHTML += `
                         <div class="search-result-item">
                             <img src="https://image.tmdb.org/t/p/w200${item.poster_path}" alt="Poster">
                             <div class="search-result-info">
                                 <h3>${title} (${year})</h3>
-                                <p><strong>Type:</strong> ${item.media_type.toUpperCase()}</p>
                                 <p class="overview-snippet">${overview}</p>
                             </div>
                             <button class="select-btn select-tmdb-btn" data-tmdb-id="${item.id}">Select</button>
@@ -247,6 +265,7 @@
             }
         });
 
+        // --- 3. HANDLE SELECTION ---
         searchResultsContainer.addEventListener('click', async (e) => {
             if (e.target.classList.contains('select-tmdb-btn')) {
                 const tmdbId = e.target.dataset.tmdbId;
@@ -267,11 +286,7 @@
                                     <p><strong>VJ:</strong> ${(item.vjs || []).join(', ')}</p>
                                 </div>
                                 <button class="select-btn select-final-btn" 
-                                        data-id="${item.id}" 
-                                        data-title="${item.title.replace(/"/g, '&quot;')}" 
-                                        data-vj="${(item.vjs || []).join(', ')}"
-                                        data-overview="${(item.description || '').replace(/"/g, '&quot;')}" 
-                                        data-backdrop="${item.backdrop || ''}">Use This Version</button>
+                                        data-id="${item.id}">Use This Version</button>
                             </div>`;
                     });
                 } catch (error) {
@@ -279,46 +294,91 @@
                 }
             }
             if (e.target.classList.contains('select-final-btn')) {
-                const btn = e.target;
-                notifTitleInput.value = `${btn.dataset.title} by ${btn.dataset.vj}`;
-                notifBodyInput.value = btn.dataset.overview;
-                notifImageUrlInput.value = btn.dataset.backdrop || '';
-                notifUrlIdInput.value = btn.dataset.id || '';
-                ['input'].forEach(evt => {
-                    [notifTitleInput, notifBodyInput, notifImageUrlInput].forEach(el => el.dispatchEvent(new Event(evt)));
-                });
-                searchResultsContainer.innerHTML = `<p class="message success" style="display:block">Form auto-filled.</p>`;
-                document.getElementById('notificationFormCard').scrollIntoView({ behavior: 'smooth' });
+                const id = e.target.dataset.id;
+                await autofillFromId(id);
+                searchResultsContainer.innerHTML = `<p class="message success" style="display:block">Form filled from search.</p>`;
             }
         });
 
-        if (notifForm) {
-            notifTitleInput.addEventListener('input', () => previewTitle.textContent = notifTitleInput.value || 'Notification Title');
-            notifBodyInput.addEventListener('input', () => previewBody.textContent = notifBodyInput.value || 'Notification body...');
-            notifImageUrlInput.addEventListener('input', () => {
-                const url = notifImageUrlInput.value;
-                previewImage.style.display = url ? 'block' : 'none';
-                previewImage.src = url;
-                previewImage.onerror = () => { previewImage.style.display = 'none'; };
-            });
-            notifForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const title = notifTitleInput.value, body = notifBodyInput.value;
-                if (!title || !body) return displayMessage(notificationMessage, 'Title and Body are required.', 'error');
-                const contentId = notifUrlIdInput.value.trim();
-                const fullUrl = contentId ? `streamzonemovies://details?id=${contentId}` : '';
-                setLoading(sendNotificationBtn, true);
-                const result = await sendNotification(title, body, notifImageUrlInput.value, fullUrl);
-                setLoading(sendNotificationBtn, false);
-                if (result.success) {
-                    displayMessage(notificationMessage, 'Notification sent successfully!', 'success');
-                    notifForm.reset();
-                    ['input'].forEach(evt => [notifTitleInput, notifBodyInput, notifImageUrlInput].forEach(el => el.dispatchEvent(new Event(evt))));
-                } else {
-                    displayMessage(notificationMessage, `Failed to send: ${result.error}`, 'error');
-                }
-            });
+        // --- 4. AUTO-FILL HELPER ---
+        async function autofillFromId(recordId) {
+            try {
+                // Show loading state in form
+                notifTitleInput.value = "Loading...";
+                const record = await pb.collection('media').getOne(recordId);
+                
+                // Construct Data
+                const vjs = (record.vjs && record.vjs.length > 0) ? ` by ${record.vjs.join(', ')}` : "";
+                const title = `${record.title}${vjs}`;
+                const body = record.description || "Watch this new movie on Stream Zone Movies!";
+                const image = record.backdrop || record.poster || "";
+                
+                // Fill Inputs
+                notifTitleInput.value = title;
+                notifBodyInput.value = body;
+                notifImageUrlInput.value = image;
+                notifUrlIdInput.value = record.id; // THE ID FOR DEEP LINK
+
+                // Update Preview
+                updatePreview();
+                
+                // Scroll to form
+                document.getElementById('notificationFormCard').scrollIntoView({ behavior: 'smooth' });
+
+            } catch(err) {
+                console.error(err);
+                displayMessage(notificationMessage, `Could not load movie data: ${err.message}`, 'error');
+            }
         }
+
+        // --- 5. CHECK URL PARAMS (The Integration Part) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoId = urlParams.get('autofill_id');
+        if (autoId) {
+            // Hide the search card initially to focus on the task
+            document.getElementById('notificationSearchCard').style.display = 'none';
+            // Trigger autofill
+            autofillFromId(autoId);
+        }
+
+        // --- 6. FORM HANDLERS ---
+        function updatePreview() {
+            previewTitle.textContent = notifTitleInput.value || 'Notification Title';
+            previewBody.textContent = notifBodyInput.value || 'Notification body...';
+            const url = notifImageUrlInput.value;
+            if (url) {
+                previewImage.style.display = 'block';
+                previewImage.src = url;
+            } else {
+                previewImage.style.display = 'none';
+            }
+        }
+
+        [notifTitleInput, notifBodyInput, notifImageUrlInput].forEach(el => {
+            el.addEventListener('input', updatePreview);
+        });
+
+        notifForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = notifTitleInput.value, body = notifBodyInput.value;
+            if (!title || !body) return displayMessage(notificationMessage, 'Title and Body are required.', 'error');
+            
+            // Construct Deep Link
+            const contentId = notifUrlIdInput.value.trim();
+            const fullUrl = contentId ? `streamzonemovies://details?id=${contentId}` : '';
+            
+            setLoading(sendNotificationBtn, true);
+            const result = await sendNotification(title, body, notifImageUrlInput.value, fullUrl);
+            setLoading(sendNotificationBtn, false);
+            
+            if (result.success) {
+                displayMessage(notificationMessage, 'Notification sent successfully!', 'success');
+                // Optional: clear form
+                // notifForm.reset(); updatePreview();
+            } else {
+                displayMessage(notificationMessage, `Failed to send: ${result.error}`, 'error');
+            }
+        });
     });
     </script>
 </body>
