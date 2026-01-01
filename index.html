@@ -41,6 +41,7 @@
         .go-link { color: var(--accent-color); font-weight: bold; margin-top: 1rem; }
         .message { padding: 15px; border-radius: 8px; margin-top: 1rem; display: none; }
         .message.error { background-color: var(--danger-color); color: white; }
+        .message.success { background-color: #2ecc71; color: white; }
         @media (max-width: 768px) {
             body { align-items: flex-start; } #adminPanel { flex-direction: column; height: auto; } .main-content { overflow-y: visible; } .admin-header { align-items: center; } .admin-header h1 { font-size: 2rem; }
             #mainMenu { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); }
@@ -71,7 +72,7 @@
             <a href="manage-banners.html"><i class="fas fa-images"></i> Manage Banners</a>
             <a href="manage-notifications.html"><i class="fas fa-paper-plane"></i> Notifications</a>
             <a href="manage-users.html"><i class="fas fa-users-cog"></i> User Management</a>
-            <a href="all-content.html"><i class="fas fa-list-ul"></i> All Content</a>
+            <a href="#" id="sideNavSearch"><i class="fas fa-search"></i> Search Content</a>
         </nav>
         <div class="main-content">
             <div class="admin-header">
@@ -100,7 +101,7 @@
             <div id="manageContentPage" class="page-container">
                 <div class="dashboard-card">
                     <h2>Search & Manage Content</h2>
-                    <div class="form-group"><label for="manageContentIdentifier">Search by Title or TMDB ID</label><input type="text" id="manageContentIdentifier" required></div>
+                    <div class="form-group"><label for="manageContentIdentifier">Search by Title or TMDB ID</label><input type="text" id="manageContentIdentifier" placeholder="Enter movie title..." required></div>
                     <button type="button" id="searchManageBtn" style="width: auto; padding: 10px 20px;">Search</button>
                     <div id="manageSearchResults" style="margin-top: 20px;"></div>
                     <div id="manageMessage" class="message"></div>
@@ -115,27 +116,34 @@
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // ✅ 1. INITIALIZE POCKETBASE (For Content)
-        const pb = new PocketBase('https://db.bestmoviesug.com');
+        // ✅ 1. INITIALIZE POCKETBASE (Eurondes DB)
+        const pb = new PocketBase('https://db.streamzonemovies.online');
         pb.autoCancellation(false);
 
-        // ✅ 2. INITIALIZE FIREBASE (For Auth Only)
+        // ✅ 2. INITIALIZE FIREBASE (Auth Only)
         const firebaseConfig = {
-            apiKey: "AIzaSyCozaGjxZ3CLFiGjnzatKtStDHgoH71wk4",
-            authDomain: "best-movies-ug-4d6d6.firebaseapp.com",
-            projectId: "best-movies-ug-4d6d6",
-            storageBucket: "best-movies-ug-4d6d6.firebasestorage.app",
-            messagingSenderId: "583499166737",
-            appId: "1:583499166737:web:8fe01624b46b8e063f6db0",
-            measurementId: "G-340GWH52KT"
+            apiKey: "AIzaSyA_tMJGvqeS77OE6FnDFkLUmAZowzY2rVw",
+            authDomain: "streamzonemovies256.firebaseapp.com",
+            projectId: "streamzonemovies256",
+            storageBucket: "streamzonemovies256.firebasestorage.app",
+            messagingSenderId: "230912443746",
+            appId: "1:230912443746:web:b62ef244ef97c92f61983b",
+            measurementId: "G-V2NNGRKCGZ"
         };
         const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(app);
-        const appCheck = firebase.appCheck(app);
-        appCheck.activate(
-            new firebase.appCheck.ReCaptchaEnterpriseProvider('6LcbAhksAAAAAMODEm_XTJPyJRclPJwe4GAAYLAP'),
-            true
-        );
+        const auth = firebase.auth();
+        
+        // ✅ 3. INITIALIZE APP CHECK (Compat Syntax)
+        // Note: 'activate' takes the key as the first argument in compat mode
+        try {
+            const appCheck = firebase.appCheck();
+            appCheck.activate(
+                '6LfE6yYsAAAAAGaRjxCskaG2HiGs4wtj_MODir-h', 
+                true // isTokenAutoRefreshEnabled
+            );
+        } catch(e) {
+            console.warn("App Check initialization error (might fail on localhost):", e);
+        }
 
         // DOM Elements
         const loginScreen = document.getElementById('loginScreen');
@@ -158,7 +166,7 @@
         };
         const displayMessage = (el, msg, type) => { if(el) { el.textContent = msg; el.className = `message ${type}`; el.style.display = 'block'; setTimeout(() => { el.style.display = 'none'; }, 5000); }};
 
-        // --- AUTH LOGIC (FIREBASE) ---
+        // --- AUTH LOGIC ---
         auth.onAuthStateChanged(user => {
             if (user) {
                 adminPanel.style.display = 'flex';
@@ -185,15 +193,26 @@
         if (logoutBtn) logoutBtn.addEventListener('click', () => auth.signOut());
         if (menuToggleBtn) menuToggleBtn.addEventListener('click', () => mainMenu.classList.toggle('open'));
 
-        // --- DASHBOARD NAVIGATION ---
-        document.getElementById('viewAllContentCard').addEventListener('click', (e) => {
-            e.preventDefault();
+        // --- NAVIGATION LOGIC ---
+        function openSearchPage() {
             dashboardPage.classList.remove('active');
             manageContentPage.classList.add('active');
             pageTitle.textContent = "Search & Manage Content";
+            // Close mobile menu if open
+            mainMenu.classList.remove('open');
+        }
+
+        document.getElementById('viewAllContentCard').addEventListener('click', (e) => {
+            e.preventDefault();
+            openSearchPage();
         });
 
-        // --- SEARCH LOGIC (POCKETBASE) ---
+        document.getElementById('sideNavSearch').addEventListener('click', (e) => {
+            e.preventDefault();
+            openSearchPage();
+        });
+
+        // --- POCKETBASE SEARCH LOGIC ---
         searchManageBtn.addEventListener('click', async () => {
             setLoading(searchManageBtn, true);
             manageSearchResults.innerHTML = '';
@@ -202,22 +221,28 @@
             if (!term) { setLoading(searchManageBtn, false); return; }
 
             try {
-                // ✅ FIX: Search by `tmdb_id` (with underscore)
+                // Search by title OR tmdb_id
                 const result = await pb.collection('media').getList(1, 50, {
-                    filter: `title ~ "${term}" || tmdb_id = "${term}"`
+                    filter: `title ~ "${term}" || tmdb_id = "${term}"`,
+                    sort: '-created'
                 });
 
                 if (result.items.length === 0) {
-                    manageSearchResults.innerHTML = '<p>No results found.</p>';
+                    manageSearchResults.innerHTML = '<p style="color:white; text-align:center;">No results found.</p>';
                 } else {
                     result.items.forEach(item => {
                         let vjDisplay = (item.vjs && Array.isArray(item.vjs) && item.vjs.length > 0) ? item.vjs[0] : 'N/A';
                         manageSearchResults.innerHTML += `
-                            <div class="result-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: var(--primary-bg); border-radius: 8px; margin-bottom: 10px;">
-                                <span>${item.title} (VJ: ${vjDisplay}) - [${item.contentType || 'movie'}]</span>
+                            <div class="result-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #111533; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333;">
+                                <div>
+                                    <strong style="color:var(--accent-color); font-size:1.1em;">${item.title}</strong>
+                                    <div style="font-size:0.85em; color:var(--text-secondary);">
+                                        Type: ${item.contentType || 'movie'} | VJ: ${vjDisplay} | ID: ${item.id}
+                                    </div>
+                                </div>
                                 <div class="result-item-actions" style="display: flex; gap: 10px;">
-                                    <button class="action-btn edit" data-id="${item.id}" data-type="${item.contentType}" style="background:var(--accent-color);color:var(--primary-bg);border:none;padding:8px 12px;border-radius:4px;cursor:pointer;">Edit</button>
-                                    <button class="action-btn delete" data-id="${item.id}" style="background:var(--danger-color);color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;">Delete</button>
+                                    <button class="action-btn edit" data-id="${item.id}" data-type="${item.contentType}" style="background:var(--accent-color);color:#000;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">Edit</button>
+                                    <button class="action-btn delete" data-id="${item.id}" style="background:var(--danger-color);color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">Delete</button>
                                 </div>
                             </div>`;
                     });
@@ -230,7 +255,7 @@
             }
         });
 
-        // --- DELETE / EDIT LOGIC ---
+        // --- DELETE / EDIT ACTIONS ---
         manageSearchResults.addEventListener('click', async e => {
             const target = e.target.closest('button');
             if (!target) return;
@@ -246,7 +271,7 @@
             }
 
             if (target.classList.contains('delete')) {
-                if (confirm('Are you sure you want to permanently delete this item?')) {
+                if (confirm('⚠️ Are you sure you want to permanently delete this content? This cannot be undone.')) {
                     try {
                         await pb.collection('media').delete(target.dataset.id);
                         displayMessage(manageMessage, 'Item deleted successfully.', 'success');
